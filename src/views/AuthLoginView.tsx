@@ -61,28 +61,28 @@ export const AuthLoginView: React.FC<AuthLoginViewProps> = ({
 
   return (
     <div className="min-h-screen bg-[#F7F9FC] flex flex-col">
-      <header className="bg-white border-b border-slate-200 px-6 h-16 flex items-center justify-between">
+      <header className="bg-white border-b border-slate-200 px-4 sm:px-6 h-16 flex items-center justify-between">
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-[#172B4D] cursor-pointer"
+          className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-[#172B4D] cursor-pointer min-h-[44px]"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to ServeQR
+          <span>Back to ServeQR</span>
         </button>
         <ServeQRLogo size="sm" />
       </header>
 
-      <main className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl p-8">
+      <main className="flex-1 flex items-center justify-center p-3 sm:p-6">
+        <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl p-5 sm:p-8 shadow-xs">
           <div className="mb-6">
             <p className="text-xs font-semibold text-[#087F5B]">
               {isSuperAdmin ? 'Platform Governance' : 'Restaurant Workspace'}
             </p>
-            <h1 className="font-display text-2xl font-bold text-[#172B4D] mt-1">
+            <h1 className="font-display text-xl sm:text-2xl font-bold text-[#172B4D] mt-1">
               {isSuperAdmin ? 'Super Admin Login' : 'Restaurant Owner Login'}
             </h1>
-            <p className="text-sm text-slate-600 mt-1.5">
+            <p className="text-xs sm:text-sm text-slate-600 mt-1.5 leading-relaxed">
               {isSuperAdmin
                 ? 'Sign in to manage registered restaurants, subscriptions, and platform analytics.'
                 : 'Sign in with your onboarding email to manage your menu, tables, QR codes, KDS, and billing.'}
@@ -118,7 +118,7 @@ export const AuthLoginView: React.FC<AuthLoginViewProps> = ({
                   }}
                   placeholder={isSuperAdmin ? 'admin@serveqr.io' : 'owner@restaurant.in'}
                   autoComplete="email"
-                  className={`w-full pl-10 pr-3.5 py-2.5 text-sm rounded-lg border bg-white focus:outline-none focus:ring-2 focus:ring-[#087F5B]/25 focus:border-[#087F5B] ${
+                  className={`w-full pl-10 pr-3.5 py-2.5 min-h-[42px] text-sm rounded-lg border bg-white focus:outline-none focus:ring-2 focus:ring-[#087F5B]/25 focus:border-[#087F5B] ${
                     errors.email ? 'border-red-400' : 'border-slate-300'
                   }`}
                 />
@@ -145,7 +145,7 @@ export const AuthLoginView: React.FC<AuthLoginViewProps> = ({
                   }}
                   placeholder="Enter your password"
                   autoComplete="current-password"
-                  className={`w-full pl-10 pr-10 py-2.5 text-sm rounded-lg border bg-white focus:outline-none focus:ring-2 focus:ring-[#087F5B]/25 focus:border-[#087F5B] ${
+                  className={`w-full pl-10 pr-10 py-2.5 min-h-[42px] text-sm rounded-lg border bg-white focus:outline-none focus:ring-2 focus:ring-[#087F5B]/25 focus:border-[#087F5B] ${
                     errors.password ? 'border-red-400' : 'border-slate-300'
                   }`}
                 />
@@ -153,7 +153,7 @@ export const AuthLoginView: React.FC<AuthLoginViewProps> = ({
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 min-h-[38px] min-w-[38px] flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -186,7 +186,7 @@ export const AuthLoginView: React.FC<AuthLoginViewProps> = ({
 
             <button
               type="submit"
-              className="w-full py-2.5 px-4 text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#087F5B] focus-visible:ring-offset-2"
+              className="w-full py-2.5 px-4 min-h-[44px] text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#087F5B] focus-visible:ring-offset-2"
             >
               {isSuperAdmin ? 'Login to Super Admin' : 'Login to Restaurant Dashboard'}
             </button>
@@ -207,7 +207,7 @@ export const AuthLoginView: React.FC<AuthLoginViewProps> = ({
                       setPassword('serveqr2026');
                       setErrors({});
                     }}
-                    className="w-full text-left px-3 py-2 rounded-lg border border-slate-200 hover:border-[#087F5B]/50 hover:bg-slate-50 transition-colors flex items-center justify-between gap-2 cursor-pointer"
+                    className="w-full text-left px-3 py-2 min-h-[44px] rounded-lg border border-slate-200 hover:border-[#087F5B]/50 hover:bg-slate-50 transition-colors flex items-center justify-between gap-2 cursor-pointer"
                   >
                     <span className="text-xs font-semibold text-[#172B4D] truncate">
                       {r.name} ({r.ownerName})
@@ -230,12 +230,12 @@ export const AuthLoginView: React.FC<AuthLoginViewProps> = ({
 
       {showForgotModal && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
           role="dialog"
           aria-modal="true"
           aria-labelledby="forgot-pw-title"
         >
-          <div className="w-full max-w-sm bg-white border border-slate-200 rounded-xl p-6">
+          <div className="w-full max-w-sm bg-white border border-slate-200 rounded-xl p-4 sm:p-6 shadow-2xl max-h-[90dvh] flex flex-col">
             <h2 id="forgot-pw-title" className="font-display text-lg font-bold text-[#172B4D]">
               Reset Password
             </h2>
@@ -251,18 +251,18 @@ export const AuthLoginView: React.FC<AuthLoginViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowForgotModal(false)}
-                  className="mt-5 w-full py-2 px-4 text-sm font-semibold text-white bg-[#172B4D] rounded-lg cursor-pointer"
+                  className="mt-5 w-full py-2.5 px-4 min-h-[44px] text-sm font-semibold text-white bg-[#172B4D] rounded-lg cursor-pointer"
                 >
                   Done
                 </button>
               </div>
             ) : (
               <form onSubmit={handleForgotSubmit} className="mt-3 space-y-4">
-                <p className="text-sm text-slate-600">
+                <p className="text-xs sm:text-sm text-slate-600">
                   Enter your account email and we will generate a secure password reset invitation.
                 </p>
                 <div>
-                  <label htmlFor="reset-email" className="block text-sm font-medium text-[#202938] mb-1">
+                  <label htmlFor="reset-email" className="block text-xs sm:text-sm font-medium text-[#202938] mb-1">
                     Email address
                   </label>
                   <input
@@ -271,20 +271,20 @@ export const AuthLoginView: React.FC<AuthLoginViewProps> = ({
                     required
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
-                    className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#087F5B]/25 focus:border-[#087F5B]"
+                    className="w-full px-3.5 py-2 min-h-[42px] text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#087F5B]/25 focus:border-[#087F5B]"
                   />
                 </div>
-                <div className="flex items-center justify-end gap-2.5">
+                <div className="flex items-center justify-end gap-2.5 pt-2">
                   <button
                     type="button"
                     onClick={() => setShowForgotModal(false)}
-                    className="px-3.5 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 cursor-pointer"
+                    className="px-3.5 py-2 min-h-[44px] text-sm font-medium text-slate-600 hover:text-slate-900 cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer"
+                    className="px-4 py-2 min-h-[44px] text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer"
                   >
                     Send Reset Link
                   </button>

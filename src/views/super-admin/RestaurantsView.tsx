@@ -83,7 +83,7 @@ export const RestaurantsView: React.FC<RestaurantsViewProps> = ({
         <div
           role="tablist"
           aria-label="Filter restaurants by status"
-          className="inline-flex items-center gap-1 p-1 bg-slate-200/70 rounded-lg overflow-x-auto"
+          className="inline-flex items-center gap-1 p-1 bg-slate-200/70 rounded-lg overflow-x-auto max-w-full"
         >
           {STATUS_FILTERS.map((status) => {
             const active = statusFilter === status;
@@ -98,7 +98,7 @@ export const RestaurantsView: React.FC<RestaurantsViewProps> = ({
                 role="tab"
                 aria-selected={active}
                 onClick={() => setStatusFilter(status)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`px-3 py-2 min-h-[38px] text-xs font-semibold rounded-md transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                   active
                     ? 'bg-white text-[#172B4D] shadow-xs'
                     : 'text-slate-600 hover:text-[#172B4D]'
@@ -123,9 +123,10 @@ export const RestaurantsView: React.FC<RestaurantsViewProps> = ({
         </div>
       </div>
 
-      {/* Restaurants Table */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
+      {/* Restaurants List Container */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+        {/* Desktop Table View (>= md) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-slate-200 text-xs font-semibold text-slate-500 bg-slate-50">
@@ -235,25 +236,120 @@ export const RestaurantsView: React.FC<RestaurantsViewProps> = ({
             </tbody>
           </table>
         </div>
+
+        {/* Mobile Cards View (< md) */}
+        <div className="block md:hidden divide-y divide-slate-100">
+          {filteredRestaurants.length === 0 ? (
+            <div className="py-12 px-6 text-center text-sm text-slate-500">
+              No restaurants match the selected filter.
+            </div>
+          ) : (
+            filteredRestaurants.map((rest) => (
+              <div key={rest.id} className="p-4 space-y-3 bg-white">
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <RestaurantBrandAvatar restaurant={rest} size="sm" />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm text-[#172B4D] truncate">{rest.name}</p>
+                      <p className="text-xs font-mono text-slate-500 truncate">
+                        {rest.id} · {rest.city}, {rest.state}
+                      </p>
+                    </div>
+                  </div>
+                  <StatusLabel status={rest.status} badge />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg bg-slate-50 text-xs text-slate-600 border border-slate-100">
+                  <div>
+                    <span className="text-[11px] text-slate-400 block">Owner</span>
+                    <strong className="text-slate-800 truncate block">{rest.ownerName}</strong>
+                    <span className="text-[11px] text-slate-500 truncate block font-mono">
+                      {rest.ownerEmail}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-slate-400 block">Plan &amp; Cycle</span>
+                    <strong className="text-slate-800 block">
+                      {rest.subscriptionPlan} · {rest.billingCycle}
+                    </strong>
+                    <StatusLabel
+                      status={rest.subscriptionStatus}
+                      className="text-[10px] mt-0.5 inline-block"
+                    />
+                  </div>
+                </div>
+
+                {/* Touch-Friendly Action Buttons */}
+                <div className="pt-1 flex items-center justify-between gap-2 flex-wrap border-t border-slate-50">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {rest.status !== 'Active' ? (
+                      <button
+                        type="button"
+                        onClick={() => updateRestaurantStatus(rest.id, 'Active')}
+                        className="px-3 py-1.5 min-h-[38px] text-xs font-semibold text-[#087F5B] bg-emerald-50 hover:bg-emerald-100 rounded-md cursor-pointer"
+                      >
+                        Activate
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => updateRestaurantStatus(rest.id, 'Inactive')}
+                        className="px-3 py-1.5 min-h-[38px] text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-md cursor-pointer"
+                      >
+                        Deactivate
+                      </button>
+                    )}
+                    {rest.status !== 'Suspended' && (
+                      <button
+                        type="button"
+                        onClick={() => updateRestaurantStatus(rest.id, 'Suspended')}
+                        className="px-3 py-1.5 min-h-[38px] text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-md cursor-pointer"
+                      >
+                        Suspend
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => startEdit(rest)}
+                      className="px-3 py-1.5 min-h-[38px] text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md cursor-pointer"
+                    >
+                      Edit
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onInspectRestaurant(rest)}
+                    className="px-3.5 py-1.5 min-h-[38px] text-xs font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-md cursor-pointer ml-auto"
+                  >
+                    View Details →
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {/* Edit Restaurant Modal */}
       {editingRestaurant && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
           role="dialog"
           aria-modal="true"
           aria-labelledby="edit-rest-title"
         >
-          <div className="w-full max-w-lg bg-white border border-slate-200 rounded-xl p-6">
-            <h3 id="edit-rest-title" className="font-display text-lg font-bold text-[#172B4D]">
-              Edit Restaurant Account ({editingRestaurant.id})
-            </h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Update account metadata or subscription tier without affecting restaurant menu or orders.
-            </p>
-            <form onSubmit={handleSaveEdit} className="mt-5 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="w-full max-w-lg bg-white border border-slate-200 rounded-xl p-4 sm:p-6 max-h-[90dvh] flex flex-col shadow-2xl">
+            <div className="shrink-0">
+              <h3 id="edit-rest-title" className="font-display text-lg font-bold text-[#172B4D]">
+                Edit Restaurant Account ({editingRestaurant.id})
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Update account metadata or subscription tier without affecting restaurant menu or orders.
+              </p>
+            </div>
+            <form onSubmit={handleSaveEdit} className="mt-4 sm:mt-5 space-y-4 overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                 <div>
                   <label htmlFor="edit-r-name" className="block text-xs font-semibold text-slate-700 mb-1">
                     Restaurant Name
@@ -346,17 +442,17 @@ export const RestaurantsView: React.FC<RestaurantsViewProps> = ({
                   </select>
                 </div>
               </div>
-              <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-slate-100">
+              <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-slate-100 shrink-0">
                 <button
                   type="button"
                   onClick={() => setEditingRestaurant(null)}
-                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 cursor-pointer"
+                  className="px-4 py-2 min-h-[44px] text-sm font-medium text-slate-600 hover:text-slate-900 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer"
+                  className="px-4 py-2 min-h-[44px] text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer"
                 >
                   Save Changes
                 </button>

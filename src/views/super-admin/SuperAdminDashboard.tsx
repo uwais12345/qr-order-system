@@ -67,14 +67,16 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       </div>
 
       {/* 6 KPI Stat Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2.5 sm:gap-4">
         {kpis.map((kpi) => (
           <div
             key={kpi.label}
-            className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between"
+            className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 flex flex-col justify-between"
           >
-            <p className="text-xs font-medium text-slate-500">{kpi.label}</p>
-            <p className="mt-2 font-mono text-2xl font-semibold text-[#172B4D] tabular-nums">
+            <p className="text-[11px] sm:text-xs font-medium text-slate-500 leading-tight">
+              {kpi.label}
+            </p>
+            <p className="mt-2 font-mono text-lg sm:text-2xl font-semibold text-[#172B4D] tabular-nums truncate">
               {kpi.value}
             </p>
           </div>
@@ -83,8 +85,8 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
       {/* Revenue Chart + Status Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <section className="lg:col-span-8 bg-white border border-slate-200 rounded-xl p-6">
-          <div className="flex items-center justify-between gap-4 mb-5">
+        <section className="lg:col-span-8 bg-white border border-slate-200 rounded-xl p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 mb-4 sm:mb-5">
             <div>
               <h3 className="font-display text-base font-bold text-[#172B4D]">
                 Revenue &amp; Orders by Restaurant
@@ -93,16 +95,16 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                 Live gross order value across registered tenants (INR)
               </p>
             </div>
-            <span className="text-xs font-mono text-slate-500 tabular-nums">
+            <span className="text-xs font-mono text-slate-600 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200 self-start sm:self-auto tabular-nums">
               Subscription MRR: {formatCurrency(metrics.subscriptionMrr)}
             </span>
           </div>
-          <div className="h-64 w-full">
+          <div className="h-60 sm:h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={revenueByRestaurant} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
+              <BarChart data={revenueByRestaurant} margin={{ top: 8, right: 8, left: -12, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#475569' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 12, fill: '#475569' }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#475569' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#475569' }} axisLine={false} tickLine={false} />
                 <Tooltip
                   formatter={(value) => [`₹${Number(value ?? 0).toLocaleString('en-IN')}`, 'Order Revenue']}
                   contentStyle={{
@@ -123,7 +125,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           </div>
         </section>
 
-        <section className="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-6 flex flex-col justify-between">
+        <section className="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-4 sm:p-6 flex flex-col justify-between">
           <div>
             <h3 className="font-display text-base font-bold text-[#172B4D]">
               Restaurant Status Overview
@@ -132,7 +134,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               Distribution of workspace lifecycle states
             </p>
 
-            <div className="mt-6 space-y-4">
+            <div className="mt-5 sm:mt-6 space-y-3.5 sm:space-y-4">
               {statusBreakdown.map((row) => {
                 const pct =
                   metrics.totalRestaurants > 0
@@ -140,8 +142,8 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                     : 0;
                 return (
                   <div key={row.label}>
-                    <div className="flex items-center justify-between text-sm mb-1.5">
-                      <span className="font-medium text-[#202938]">{row.label}</span>
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span className="font-medium text-[#202938] text-xs sm:text-sm">{row.label}</span>
                       <span className="font-mono text-xs text-slate-600 tabular-nums">
                         {row.count} ({pct}%)
                       </span>
@@ -170,19 +172,21 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       {/* Recent Registrations + Platform Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <section className="lg:col-span-7 bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <h3 className="font-display text-base font-bold text-[#172B4D]">
-              Recent Restaurant Registrations
+              Recent Registrations
             </h3>
             <button
               type="button"
               onClick={onViewAllRestaurants}
-              className="text-xs font-semibold text-[#087F5B] hover:text-[#06674A] inline-flex items-center gap-1 cursor-pointer"
+              className="text-xs font-semibold text-[#087F5B] hover:text-[#06674A] inline-flex items-center gap-1 cursor-pointer min-h-[36px]"
             >
               View all <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
-          <div className="overflow-x-auto">
+
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-100 text-xs font-semibold text-slate-500 bg-slate-50/70">
@@ -223,9 +227,37 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Cards View (< md) */}
+          <div className="block md:hidden divide-y divide-slate-100">
+            {state.restaurants.slice(0, 5).map((rest) => (
+              <div key={rest.id} className="p-4 space-y-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-semibold text-sm text-[#172B4D]">{rest.name}</p>
+                    <p className="text-xs font-mono text-slate-500">{rest.id} · {rest.city}</p>
+                  </div>
+                  <StatusLabel status={rest.status} badge />
+                </div>
+                <div className="flex items-center justify-between text-xs text-slate-600">
+                  <span>Owner: <strong className="text-slate-800">{rest.ownerName}</strong></span>
+                  <span className="font-medium text-slate-700">{rest.subscriptionPlan}</span>
+                </div>
+                <div className="pt-1 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => onInspectRestaurant(rest)}
+                    className="min-h-[40px] px-3.5 py-1.5 text-xs font-semibold text-[#087F5B] bg-emerald-50 hover:bg-emerald-100 rounded-lg cursor-pointer"
+                  >
+                    Inspect Workspace →
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
 
-        <section className="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-6">
+        <section className="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-4 sm:p-6">
           <h3 className="font-display text-base font-bold text-[#172B4D] mb-4">
             Recent Platform Activity
           </h3>
@@ -244,7 +276,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                   </span>
                 </div>
                 <p className="text-xs text-[#087F5B] font-medium mt-0.5">{act.action}</p>
-                <p className="text-xs text-slate-600 mt-0.5">{act.detail}</p>
+                <p className="text-xs text-slate-600 mt-0.5 break-words">{act.detail}</p>
               </div>
             ))}
           </div>

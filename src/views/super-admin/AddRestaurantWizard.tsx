@@ -147,30 +147,30 @@ export const AddRestaurantWizard: React.FC<AddRestaurantWizardProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-900/55 flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-slate-900/55 flex items-center justify-center p-2.5 sm:p-4 overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-labelledby="add-rest-wizard-title"
     >
-      <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-xl overflow-hidden my-6">
+      <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-xl overflow-hidden my-3 sm:my-6 max-h-[90dvh] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between gap-4">
-          <div>
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-200 flex items-center justify-between gap-3 shrink-0">
+          <div className="min-w-0">
             <h2
               id="add-rest-wizard-title"
-              className="font-display text-lg font-bold text-[#172B4D]"
+              className="font-display text-base sm:text-lg font-bold text-[#172B4D] truncate"
             >
               {createdRestaurant ? 'Restaurant Workspace Provisioned' : 'Register New Restaurant'}
             </h2>
             {!createdRestaurant && (
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5 truncate">
                 Step {step} of 4 ·{' '}
                 {step === 1
                   ? 'Restaurant Information'
                   : step === 2
-                  ? 'Owner Account & Email OTP Verification'
+                  ? 'Owner Account & Email OTP'
                   : step === 3
-                  ? 'Subscription & Custom Pricing'
+                  ? 'Subscription & Pricing'
                   : 'Review & Provision'}
               </p>
             )}
@@ -179,7 +179,7 @@ export const AddRestaurantWizard: React.FC<AddRestaurantWizardProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Close registration wizard"
-            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
+            className="p-2 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
@@ -187,23 +187,23 @@ export const AddRestaurantWizard: React.FC<AddRestaurantWizardProps> = ({
 
         {/* Step Indicator */}
         {!createdRestaurant && (
-          <div className="px-6 py-3 bg-slate-50 border-b border-slate-200 grid grid-cols-4 gap-2">
+          <div className="px-3 sm:px-6 py-2.5 sm:py-3 bg-slate-50 border-b border-slate-200 grid grid-cols-4 gap-1.5 sm:gap-2 shrink-0">
             {[
-              { n: 1, label: 'Restaurant' },
-              { n: 2, label: 'Account & OTP' },
-              { n: 3, label: 'Subscription' },
+              { n: 1, label: 'Info' },
+              { n: 2, label: 'Account' },
+              { n: 3, label: 'Plan' },
               { n: 4, label: 'Review' },
             ].map((s) => (
-              <div key={s.n} className="flex items-center gap-2">
+              <div key={s.n} className="flex items-center gap-1.5 min-w-0">
                 <span
-                  className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center shrink-0 ${
+                  className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full text-[11px] sm:text-xs font-bold flex items-center justify-center shrink-0 ${
                     step >= s.n ? 'bg-[#087F5B] text-white' : 'bg-slate-200 text-slate-600'
                   }`}
                 >
                   {s.n}
                 </span>
                 <span
-                  className={`text-xs font-medium truncate ${
+                  className={`text-[11px] sm:text-xs font-medium truncate ${
                     step >= s.n ? 'text-[#172B4D]' : 'text-slate-500'
                   }`}
                 >
@@ -215,7 +215,7 @@ export const AddRestaurantWizard: React.FC<AddRestaurantWizardProps> = ({
         )}
 
         {/* Body */}
-        <div className="p-6 max-h-[68vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1">
           {createdRestaurant ? (
             <div className="space-y-5">
               <div className="flex items-start gap-3 p-4 rounded-xl bg-emerald-50/70 border border-emerald-200">
@@ -826,19 +826,19 @@ export const AddRestaurantWizard: React.FC<AddRestaurantWizardProps> = ({
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="text-xs font-semibold text-[#087F5B] cursor-pointer"
+                  className="text-xs font-semibold text-[#087F5B] cursor-pointer min-h-[36px] px-2 py-1"
                 >
                   Edit
                 </button>
               </div>
-              <dl className="grid grid-cols-3 gap-3 text-xs">
+              <dl className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 text-xs">
                 <div>
                   <dt className="text-slate-500">Owner</dt>
                   <dd className="font-semibold text-[#172B4D] mt-0.5">{form.ownerName}</dd>
                 </div>
                 <div>
                   <dt className="text-slate-500">Account Email</dt>
-                  <dd className="font-mono text-slate-700 mt-0.5">{form.ownerEmail}</dd>
+                  <dd className="font-mono text-slate-700 mt-0.5 break-all">{form.ownerEmail}</dd>
                 </div>
                 <div>
                   <dt className="text-slate-500">Email Verification</dt>
@@ -851,12 +851,12 @@ export const AddRestaurantWizard: React.FC<AddRestaurantWizardProps> = ({
                 <button
                   type="button"
                   onClick={() => setStep(3)}
-                  className="text-xs font-semibold text-[#087F5B] cursor-pointer"
+                  className="text-xs font-semibold text-[#087F5B] cursor-pointer min-h-[36px] px-2 py-1"
                 >
                   Edit
                 </button>
               </div>
-              <dl className="grid grid-cols-3 gap-3 text-xs">
+              <dl className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 text-xs">
                 <div>
                   <dt className="text-slate-500">Plan &amp; Cycle</dt>
                   <dd className="font-semibold text-[#172B4D] mt-0.5">
@@ -886,7 +886,7 @@ export const AddRestaurantWizard: React.FC<AddRestaurantWizardProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           {createdRestaurant ? (
             <>
               <span className="text-xs text-slate-500">
@@ -895,17 +895,17 @@ export const AddRestaurantWizard: React.FC<AddRestaurantWizardProps> = ({
               <button
                 type="button"
                 onClick={() => onCreated(createdRestaurant)}
-                className="px-4 py-2 text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2.5 min-h-[44px] text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer"
               >
                 Inspect Workspace
               </button>
             </>
           ) : (
-            <>
+            <div className="flex items-center justify-between w-full gap-3">
               <button
                 type="button"
                 onClick={() => (step === 1 ? onClose() : setStep((s) => (s - 1) as 1 | 2 | 3))}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-[#172B4D] cursor-pointer"
+                className="px-4 py-2 min-h-[44px] text-sm font-medium text-slate-600 hover:text-[#172B4D] cursor-pointer"
               >
                 {step === 1 ? 'Cancel' : 'Back'}
               </button>
@@ -913,7 +913,7 @@ export const AddRestaurantWizard: React.FC<AddRestaurantWizardProps> = ({
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="px-5 py-2 text-sm font-semibold text-white bg-[#172B4D] hover:bg-[#10203A] rounded-lg cursor-pointer"
+                  className="px-5 py-2 min-h-[44px] text-sm font-semibold text-white bg-[#172B4D] hover:bg-[#10203A] rounded-lg cursor-pointer"
                 >
                   Continue
                 </button>
@@ -921,12 +921,12 @@ export const AddRestaurantWizard: React.FC<AddRestaurantWizardProps> = ({
                 <button
                   type="button"
                   onClick={handleCreate}
-                  className="px-5 py-2 text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer"
+                  className="px-5 py-2 min-h-[44px] text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer"
                 >
                   Create Restaurant
                 </button>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>

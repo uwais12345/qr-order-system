@@ -56,34 +56,34 @@ export const RestaurantInspectionView: React.FC<RestaurantInspectionViewProps> =
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
             onClick={onBack}
-            className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 cursor-pointer"
+            className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 cursor-pointer shrink-0"
             aria-label="Back to restaurants list"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h2 className="font-display text-2xl font-bold text-[#172B4D]">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="font-display text-xl sm:text-2xl font-bold text-[#172B4D] truncate">
                 {restaurant.name}
               </h2>
-              <StatusLabel status={restaurant.status} />
+              <StatusLabel status={restaurant.status} badge />
             </div>
-            <p className="text-xs font-mono text-slate-500 mt-0.5">
-              {restaurant.id} · {restaurant.businessType} · Registered {restaurant.registeredAt}
+            <p className="text-xs font-mono text-slate-500 mt-0.5 truncate">
+              {restaurant.id} · {restaurant.businessType} · Reg: {restaurant.registeredAt}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {restaurant.status !== 'Active' ? (
             <button
               type="button"
               onClick={() => updateRestaurantStatus(restaurant.id, 'Active')}
-              className="px-4 py-2 text-xs font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer"
+              className="px-4 py-2 min-h-[40px] text-xs font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer"
             >
               Activate Workspace
             </button>
@@ -91,7 +91,7 @@ export const RestaurantInspectionView: React.FC<RestaurantInspectionViewProps> =
             <button
               type="button"
               onClick={() => updateRestaurantStatus(restaurant.id, 'Inactive')}
-              className="px-4 py-2 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 hover:bg-amber-100 rounded-lg cursor-pointer"
+              className="px-4 py-2 min-h-[40px] text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 hover:bg-amber-100 rounded-lg cursor-pointer"
             >
               Deactivate
             </button>
@@ -100,7 +100,7 @@ export const RestaurantInspectionView: React.FC<RestaurantInspectionViewProps> =
             <button
               type="button"
               onClick={() => updateRestaurantStatus(restaurant.id, 'Suspended')}
-              className="px-4 py-2 text-xs font-semibold text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 rounded-lg cursor-pointer"
+              className="px-4 py-2 min-h-[40px] text-xs font-semibold text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 rounded-lg cursor-pointer"
             >
               Suspend
             </button>
@@ -118,49 +118,49 @@ export const RestaurantInspectionView: React.FC<RestaurantInspectionViewProps> =
       </div>
 
       {/* Operational KPI Snapshot */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <p className="text-xs text-slate-500">Branches</p>
-          <p className="font-mono text-xl font-bold text-[#172B4D] mt-1 tabular-nums">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
+        <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4">
+          <p className="text-[11px] sm:text-xs text-slate-500">Branches</p>
+          <p className="font-mono text-lg sm:text-xl font-bold text-[#172B4D] mt-1 tabular-nums">
             {restaurant.branches.length}
           </p>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <p className="text-xs text-slate-500">Tables / QR Deployed</p>
-          <p className="font-mono text-xl font-bold text-[#172B4D] mt-1 tabular-nums">
+        <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4">
+          <p className="text-[11px] sm:text-xs text-slate-500">Tables / QRs</p>
+          <p className="font-mono text-lg sm:text-xl font-bold text-[#172B4D] mt-1 tabular-nums">
             {tables.length} / {activeQrCount}
           </p>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <p className="text-xs text-slate-500">Menu Items</p>
-          <p className="font-mono text-xl font-bold text-[#172B4D] mt-1 tabular-nums">
+        <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4">
+          <p className="text-[11px] sm:text-xs text-slate-500">Menu Items</p>
+          <p className="font-mono text-lg sm:text-xl font-bold text-[#172B4D] mt-1 tabular-nums">
             {menuItems.length}
           </p>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <p className="text-xs text-slate-500">Total Orders</p>
-          <p className="font-mono text-xl font-bold text-[#172B4D] mt-1 tabular-nums">
+        <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4">
+          <p className="text-[11px] sm:text-xs text-slate-500">Total Orders</p>
+          <p className="font-mono text-lg sm:text-xl font-bold text-[#172B4D] mt-1 tabular-nums">
             {orders.length}
           </p>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-4">
-          <p className="text-xs text-slate-500">Gross Order Value</p>
-          <p className="font-mono text-xl font-bold text-[#087F5B] mt-1 tabular-nums">
+        <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 col-span-2 sm:col-span-1">
+          <p className="text-[11px] sm:text-xs text-slate-500">Gross Order Value</p>
+          <p className="font-mono text-lg sm:text-xl font-bold text-[#087F5B] mt-1 tabular-nums truncate">
             {formatCurrency(totalRevenue, restaurant.settings.currencySymbol)}
           </p>
         </div>
       </div>
 
       {/* Profile, Owner, Subscription */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <section className="bg-white border border-slate-200 rounded-xl p-6">
-          <h3 className="font-display text-base font-bold text-[#172B4D] mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <section className="bg-white border border-slate-200 rounded-xl p-4 sm:p-6">
+          <h3 className="font-display text-base font-bold text-[#172B4D] mb-3 sm:mb-4">
             Restaurant Profile
           </h3>
           <dl className="space-y-3 text-sm">
             <div>
               <dt className="text-xs text-slate-500">Business Email</dt>
-              <dd className="font-mono text-xs text-slate-800 mt-0.5">{restaurant.email}</dd>
+              <dd className="font-mono text-xs text-slate-800 mt-0.5 break-all">{restaurant.email}</dd>
             </div>
             <div>
               <dt className="text-xs text-slate-500">Phone</dt>
@@ -168,7 +168,7 @@ export const RestaurantInspectionView: React.FC<RestaurantInspectionViewProps> =
             </div>
             <div>
               <dt className="text-xs text-slate-500">Address</dt>
-              <dd className="text-slate-700 mt-0.5">
+              <dd className="text-xs sm:text-sm text-slate-700 mt-0.5">
                 {restaurant.address}, {restaurant.city}, {restaurant.state} {restaurant.postalCode},{' '}
                 {restaurant.country}
               </dd>
@@ -180,8 +180,8 @@ export const RestaurantInspectionView: React.FC<RestaurantInspectionViewProps> =
           </dl>
         </section>
 
-        <section className="bg-white border border-slate-200 rounded-xl p-6">
-          <h3 className="font-display text-base font-bold text-[#172B4D] mb-4">
+        <section className="bg-white border border-slate-200 rounded-xl p-4 sm:p-6">
+          <h3 className="font-display text-base font-bold text-[#172B4D] mb-3 sm:mb-4">
             Owner &amp; Onboarding
           </h3>
           <dl className="space-y-3 text-sm">
@@ -191,7 +191,7 @@ export const RestaurantInspectionView: React.FC<RestaurantInspectionViewProps> =
             </div>
             <div>
               <dt className="text-xs text-slate-500">Owner Email</dt>
-              <dd className="font-mono text-xs text-slate-800 mt-0.5">{restaurant.ownerEmail}</dd>
+              <dd className="font-mono text-xs text-slate-800 mt-0.5 break-all">{restaurant.ownerEmail}</dd>
             </div>
             <div>
               <dt className="text-xs text-slate-500">Owner Phone</dt>
@@ -208,8 +208,8 @@ export const RestaurantInspectionView: React.FC<RestaurantInspectionViewProps> =
           </dl>
         </section>
 
-        <section className="bg-white border border-slate-200 rounded-xl p-6">
-          <h3 className="font-display text-base font-bold text-[#172B4D] mb-4">
+        <section className="bg-white border border-slate-200 rounded-xl p-4 sm:p-6">
+          <h3 className="font-display text-base font-bold text-[#172B4D] mb-3 sm:mb-4">
             Subscription &amp; Billing Overview
           </h3>
           <dl className="space-y-3 text-sm">
@@ -222,7 +222,7 @@ export const RestaurantInspectionView: React.FC<RestaurantInspectionViewProps> =
             <div>
               <dt className="text-xs text-slate-500">Subscription Status</dt>
               <dd className="mt-0.5">
-                <StatusLabel status={restaurant.subscriptionStatus} />
+                <StatusLabel status={restaurant.subscriptionStatus} badge />
               </dd>
             </div>
             <div>
@@ -244,7 +244,7 @@ export const RestaurantInspectionView: React.FC<RestaurantInspectionViewProps> =
 
       {/* Branches & Recent Orders */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <section className="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-6">
+        <section className="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-4 sm:p-6">
           <h3 className="font-display text-base font-bold text-[#172B4D] mb-4">
             Branches &amp; QR Deployment
           </h3>
@@ -270,12 +270,14 @@ export const RestaurantInspectionView: React.FC<RestaurantInspectionViewProps> =
         </section>
 
         <section className="lg:col-span-7 bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
             <h3 className="font-display text-base font-bold text-[#172B4D]">
               Recent Orders (Read-Only)
             </h3>
           </div>
-          <div className="overflow-x-auto">
+
+          {/* Desktop Table View (>= md) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500">
@@ -316,6 +318,30 @@ export const RestaurantInspectionView: React.FC<RestaurantInspectionViewProps> =
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Orders View (< md) */}
+          <div className="block md:hidden divide-y divide-slate-100">
+            {orders.length === 0 ? (
+              <div className="py-8 text-center text-xs text-slate-500">
+                No dine-in orders recorded yet for this workspace.
+              </div>
+            ) : (
+              orders.slice(0, 6).map((order) => (
+                <div key={order.id} className="p-4 space-y-2 bg-white">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-xs font-semibold text-[#172B4D]">{order.id}</span>
+                    <StatusLabel status={order.status} badge />
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-slate-600">
+                    <span>Table {order.tableNumber} · {order.customerName || 'Guest'}</span>
+                    <span className="font-mono text-xs font-bold text-[#172B4D]">
+                      {formatCurrency(order.totalAmount, restaurant.settings.currencySymbol)}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </section>
       </div>

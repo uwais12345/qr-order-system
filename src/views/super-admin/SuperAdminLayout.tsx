@@ -64,7 +64,7 @@ export const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({
         <button
           type="button"
           onClick={() => setMobileMenuOpen(false)}
-          className="lg:hidden p-1.5 text-slate-300 hover:text-white cursor-pointer"
+          className="lg:hidden p-2 text-slate-300 hover:text-white cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg"
           aria-label="Close navigation"
         >
           <X className="w-5 h-5" />
@@ -88,7 +88,7 @@ export const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({
                 onSelectSection(item.id);
                 setMobileMenuOpen(false);
               }}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 min-h-[44px] rounded-lg text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
                 active
                   ? 'bg-[#087F5B] text-white'
                   : 'text-slate-300 hover:bg-white/8 hover:text-white'
@@ -105,7 +105,7 @@ export const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({
         <button
           type="button"
           onClick={onLogout}
-          className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-white/8 hover:text-white transition-colors cursor-pointer"
+          className="w-full flex items-center gap-3 px-3.5 py-2.5 min-h-[44px] rounded-lg text-sm font-medium text-slate-300 hover:bg-white/8 hover:text-white transition-colors cursor-pointer"
         >
           <LogOut className="w-4 h-4 shrink-0" />
           <span>Sign Out</span>
@@ -124,10 +124,12 @@ export const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
-          <div className="w-64 bg-[#172B4D] text-white h-full shadow-xl">{renderNavContent()}</div>
+          <div className="w-64 max-w-[85vw] bg-[#172B4D] text-white h-full shadow-xl">
+            {renderNavContent()}
+          </div>
           <button
             type="button"
-            className="flex-1 bg-slate-900/50"
+            className="flex-1 bg-slate-900/50 cursor-pointer"
             aria-label="Close sidebar overlay"
             onClick={() => setMobileMenuOpen(false)}
           />
@@ -136,22 +138,22 @@ export const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({
 
       {/* Main Content Area */}
       <div className="flex-1 min-w-0 flex flex-col">
-        <header className="sticky top-0 z-30 h-16 bg-white border-b border-slate-200 px-4 sm:px-6 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
+        <header className="sticky top-0 z-30 h-16 bg-white border-b border-slate-200 px-3 sm:px-6 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 -ml-2 text-slate-600 hover:text-[#172B4D] cursor-pointer"
+              className="lg:hidden p-2 -ml-1 sm:-ml-2 text-slate-600 hover:text-[#172B4D] cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg"
               aria-label="Open menu"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <div className="flex items-center gap-2 text-sm min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-sm min-w-0">
               <span className="text-slate-400 hidden sm:inline whitespace-nowrap">
                 Super Admin
               </span>
               <span className="text-slate-300 hidden sm:inline">/</span>
-              <h1 className="font-display font-bold text-[#172B4D] truncate">
+              <h1 className="font-display font-bold text-sm sm:text-base text-[#172B4D] truncate">
                 {breadcrumbTitle}
               </h1>
             </div>
@@ -160,10 +162,10 @@ export const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({
           <button
             type="button"
             onClick={onOpenAddRestaurant}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 min-h-[40px] text-xs sm:text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
-            Add Restaurant
+            <Plus className="w-4 h-4 shrink-0" />
+            <span>Add Restaurant</span>
           </button>
         </header>
 
