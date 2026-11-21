@@ -1,9 +1,21 @@
 import React, { useMemo, useState } from 'react';
-import { Pencil, Plus, Search, Trash2, X } from 'lucide-react';
+import {
+  AlertTriangle,
+  Check,
+  CheckCircle2,
+  FolderEdit,
+  Layers,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { CURATED_FOOD_IMAGE_OPTIONS, FOOD_IMAGES } from '../../domain/seedData';
 import {
   formatCurrency,
   scopeMenuItemsByRestaurant,
+  validateCategoryName,
   validateMenuItemForm,
   type ValidationErrors,
 } from '../../domain/serveqrLogic';
@@ -20,6 +32,8 @@ export const MenuManagementView: React.FC<MenuManagementViewProps> = ({ restaura
   const {
     state,
     addCategory,
+    renameCategory,
+    deleteCategory,
     addMenuItem,
     updateMenuItem,
     deleteMenuItem,
@@ -41,7 +55,30 @@ export const MenuManagementView: React.FC<MenuManagementViewProps> = ({ restaura
   const [dietFilter, setDietFilter] = useState<'all' | 'veg' | 'nonveg'>('all');
   const [search, setSearch] = useState('');
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryError, setNewCategoryError] = useState('');
   const [showCategoryInput, setShowCategoryInput] = useState(false);
+
+  // Category Manager Modal and CRUD state
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [catManagerNewName, setCatManagerNewName] = useState('');
+  const [catManagerNewError, setCatManagerNewError] = useState('');
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [renameInput, setRenameInput] = useState('');
+  const [renameError, setRenameError] = useState('');
+  const [deletingCategory, setDeletingCategory] = useState<string | null>(null);
+  const [reassignTarget, setReassignTarget] = useState<string>('');
+  const [deleteError, setDeleteError] = useState('');
+  const [categoryNotice, setCategoryNotice] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+
+  const showFeedback = (message: string, type: 'success' | 'error' = 'success') => {
+    setCategoryNotice({ type, message });
+    window.setTimeout(() => {
+      setCategoryNotice((curr) => (curr?.message === message ? null : curr));
+    }, 4000);
+  };
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
@@ -260,12 +297,108 @@ export const MenuManagementView: React.FC<MenuManagementViewProps> = ({ restaura
     setModalOpen(false);
   };
 
-  const handleAddCategory = (e: React.FormEvent) => {
+  const handleQuickAddCategory = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCategoryName.trim()) return;
-    addCategory(restaurant.id, newCategoryName.trim());
+    const validation = validateCategoryName(newCategoryName, categories);
+    if (!validation.valid) {
+      setNewCategoryError(validation.error || 'Invalid category name.');
+      return;
+    }
+    const res = addCategory(restaurant.id, validation.cleanName);
+    if (!res.ok) {
+      setNewCategoryError(res.error || 'Failed to create category.');
+      return;
+    }
+    const createdName = validation.cleanName;
     setNewCategoryName('');
+    setNewCategoryError('');
     setShowCategoryInput(false);
+    showFeedback(`Category "${createdName}" created successfully!`);
+  };
+
+  const handleManagerAddCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    const validation = validateCategoryName(catManagerNewName, categories);
+    if (!validation.valid) {
+      setCatManagerNewError(validation.error || 'Invalid category name.');
+      return;
+    }
+    const res = addCategory(restaurant.id, validation.cleanName);
+    if (!res.ok) {
+      setCatManagerNewError(res.error || 'Failed to create category.');
+      return;
+    }
+    const createdName = validation.cleanName;
+    setCatManagerNewName('');
+    setCatManagerNewError('');
+    showFeedback(`Category "${createdName}" created successfully!`);
+  };
+
+  const handleStartRename = (cat: string) => {
+    setEditingCategory(cat);
+    setRenameInput(cat);
+    setRenameError('');
+  };
+
+  const handleRenameSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCategory) return;
+    const validation = validateCategoryName(renameInput, categories, editingCategory);
+    if (!validation.valid) {
+      setRenameError(validation.error || 'Invalid category name.');
+      return;
+    }
+    const res = renameCategory(restaurant.id, editingCategory, validation.cleanName);
+    if (!res.ok) {
+      setRenameError(res.error || 'Failed to rename category.');
+      return;
+    }
+    if (selectedCategory === editingCategory) {
+      setSelectedCategory(validation.cleanName);
+    }
+    const oldName = editingCategory;
+    const newName = validation.cleanName;
+    setEditingCategory(null);
+    setRenameInput('');
+    setRenameError('');
+    showFeedback(`Category "${oldName}" renamed to "${newName}". Associated dishes updated.`);
+  };
+
+  const handleOpenDelete = (cat: string) => {
+    if (categories.length <= 1) {
+      showFeedback(
+        'Cannot delete the only remaining category. A restaurant must have at least one category.',
+        'error'
+      );
+      return;
+    }
+    const otherCats = categories.filter((c) => c !== cat);
+    setDeletingCategory(cat);
+    setReassignTarget(otherCats[0] ?? '');
+    setDeleteError('');
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deletingCategory || !reassignTarget) return;
+    const count = items.filter((i) => i.category === deletingCategory).length;
+    const catName = deletingCategory;
+    const targetName = reassignTarget;
+    const res = deleteCategory(restaurant.id, deletingCategory, reassignTarget);
+    if (!res.ok) {
+      setDeleteError(res.error || 'Failed to delete category.');
+      return;
+    }
+    if (selectedCategory === deletingCategory) {
+      setSelectedCategory(reassignTarget);
+    }
+    setDeletingCategory(null);
+    setReassignTarget('');
+    setDeleteError('');
+    showFeedback(
+      count > 0
+        ? `Category "${catName}" deleted. ${count} dish${count === 1 ? '' : 'es'} reassigned to "${targetName}".`
+        : `Category "${catName}" deleted successfully.`
+    );
   };
 
   return (
@@ -278,18 +411,29 @@ export const MenuManagementView: React.FC<MenuManagementViewProps> = ({ restaura
             immediately on table QR menus.
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
-            onClick={() => setShowCategoryInput((v) => !v)}
-            className="px-3.5 py-2 text-xs font-semibold text-[#172B4D] bg-white border border-slate-300 hover:bg-slate-50 rounded-lg cursor-pointer whitespace-nowrap"
+            onClick={() => setShowCategoryManager(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[40px] text-xs font-semibold text-[#172B4D] bg-white border border-slate-300 hover:bg-slate-50 rounded-lg cursor-pointer whitespace-nowrap shadow-xs"
           >
-            + Add Category
+            <Layers className="w-4 h-4 text-[#087F5B]" />
+            Manage Categories
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setShowCategoryInput((v) => !v);
+              setNewCategoryError('');
+            }}
+            className="px-3.5 py-2 min-h-[40px] text-xs font-semibold text-[#172B4D] bg-white border border-slate-300 hover:bg-slate-50 rounded-lg cursor-pointer whitespace-nowrap"
+          >
+            + Quick Add
           </button>
           <button
             type="button"
             onClick={openCreateModal}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-4 py-2 min-h-[40px] text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer whitespace-nowrap shadow-xs"
           >
             <Plus className="w-4 h-4" />
             Add Food Item
@@ -297,37 +441,81 @@ export const MenuManagementView: React.FC<MenuManagementViewProps> = ({ restaura
         </div>
       </div>
 
+      {/* Category operation notification banner */}
+      {categoryNotice && (
+        <div
+          role="status"
+          className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 text-sm font-medium transition-all ${
+            categoryNotice.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-[#087F5B]'
+              : 'bg-red-50 border-red-200 text-red-700'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            {categoryNotice.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-[#087F5B]" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 shrink-0 text-red-600" />
+            )}
+            <span>{categoryNotice.message}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCategoryNotice(null)}
+            className="p-1 hover:bg-black/5 rounded-md text-slate-500 cursor-pointer"
+            aria-label="Dismiss notice"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {showCategoryInput && (
         <form
-          onSubmit={handleAddCategory}
-          className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
+          onSubmit={handleQuickAddCategory}
+          className="bg-white border border-slate-200 rounded-xl p-4 space-y-2 shadow-xs"
         >
-          <label htmlFor="new-cat-name" className="text-xs font-semibold text-slate-700 whitespace-nowrap">
-            New Category Name
-          </label>
-          <input
-            id="new-cat-name"
-            type="text"
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-            placeholder="e.g., Wood-Fired Breads"
-            className="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg"
-          />
-          <div className="flex items-center gap-2">
-            <button
-              type="submit"
-              className="px-4 py-2 text-xs font-semibold text-white bg-[#087F5B] rounded-lg cursor-pointer"
-            >
-              Save Category
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowCategoryInput(false)}
-              className="px-3 py-2 text-xs font-medium text-slate-600 cursor-pointer"
-            >
-              Cancel
-            </button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <label htmlFor="new-cat-name" className="text-xs font-semibold text-slate-700 whitespace-nowrap">
+              New Category Name
+            </label>
+            <input
+              id="new-cat-name"
+              type="text"
+              value={newCategoryName}
+              onChange={(e) => {
+                setNewCategoryName(e.target.value);
+                if (newCategoryError) setNewCategoryError('');
+              }}
+              placeholder="e.g., Wood-Fired Breads"
+              className={`flex-1 px-3 py-2 text-sm border rounded-lg ${
+                newCategoryError ? 'border-red-500 focus:ring-red-500' : 'border-slate-300'
+              }`}
+            />
+            <div className="flex items-center gap-2">
+              <button
+                type="submit"
+                className="px-4 py-2 text-xs font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer min-h-[38px]"
+              >
+                Save Category
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCategoryInput(false);
+                  setNewCategoryError('');
+                }}
+                className="px-3 py-2 text-xs font-medium text-slate-600 hover:text-slate-800 cursor-pointer min-h-[38px]"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
+          {newCategoryError && (
+            <p role="alert" className="text-xs text-red-600 font-medium pl-0.5">
+              {newCategoryError}
+            </p>
+          )}
         </form>
       )}
 
@@ -891,6 +1079,311 @@ export const MenuManagementView: React.FC<MenuManagementViewProps> = ({ restaura
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* CATEGORY MANAGEMENT MODAL */}
+      {showCategoryManager && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cat-manager-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs"
+        >
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full max-h-[90dvh] flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-[#087F5B]">
+                  <Layers className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 id="cat-manager-title" className="font-display font-bold text-base text-[#172B4D]">
+                    Category Management
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {categories.length} categories · Create, rename, or reassign & delete
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCategoryManager(false);
+                  setEditingCategory(null);
+                  setRenameError('');
+                  setCatManagerNewError('');
+                }}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
+                aria-label="Close category manager"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Scrollable Body */}
+            <div className="overflow-y-auto p-4 sm:p-5 space-y-5 flex-1">
+              {/* Inline Create Category Form */}
+              <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 space-y-2">
+                <p className="text-xs font-bold text-[#172B4D]">Add New Category</p>
+                <form onSubmit={handleManagerAddCategory} className="space-y-2">
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={catManagerNewName}
+                      onChange={(e) => {
+                        setCatManagerNewName(e.target.value);
+                        if (catManagerNewError) setCatManagerNewError('');
+                      }}
+                      placeholder="e.g., Signature Platters"
+                      className={`flex-1 px-3 py-2 text-sm bg-white border rounded-lg min-h-[42px] ${
+                        catManagerNewError ? 'border-red-500 focus:ring-red-500' : 'border-slate-300'
+                      }`}
+                    />
+                    <button
+                      type="submit"
+                      className="px-4 py-2 min-h-[42px] text-xs font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer whitespace-nowrap shadow-xs"
+                    >
+                      + Add
+                    </button>
+                  </div>
+                  {catManagerNewError && (
+                    <p role="alert" className="text-xs text-red-600 font-medium">
+                      {catManagerNewError}
+                    </p>
+                  )}
+                </form>
+              </div>
+
+              {/* Categories List */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-500 px-1">
+                  <span>Category Name</span>
+                  <span>Dishes Assigned</span>
+                </div>
+
+                <div className="space-y-2">
+                  {categories.map((cat) => {
+                    const dishCount = items.filter((i) => i.category === cat).length;
+                    const isEditing = editingCategory === cat;
+
+                    if (isEditing) {
+                      return (
+                        <form
+                          key={cat}
+                          onSubmit={handleRenameSubmit}
+                          className="p-3 bg-emerald-50/50 border border-[#087F5B] rounded-xl space-y-2"
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={renameInput}
+                              onChange={(e) => {
+                                setRenameInput(e.target.value);
+                                if (renameError) setRenameError('');
+                              }}
+                              className={`flex-1 px-3 py-2 text-sm bg-white border rounded-lg min-h-[40px] ${
+                                renameError ? 'border-red-500' : 'border-slate-300'
+                              }`}
+                              autoFocus
+                            />
+                            <button
+                              type="submit"
+                              className="px-3.5 py-2 min-h-[40px] text-xs font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer inline-flex items-center gap-1 shadow-xs"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingCategory(null);
+                                setRenameError('');
+                              }}
+                              className="px-3 py-2 min-h-[40px] text-xs font-medium text-slate-600 hover:text-slate-800 cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                          {renameError && (
+                            <p role="alert" className="text-xs text-red-600 font-medium">
+                              {renameError}
+                            </p>
+                          )}
+                        </form>
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={cat}
+                        className="p-3 bg-white border border-slate-200 hover:border-slate-300 rounded-xl flex items-center justify-between gap-3 transition-colors shadow-2xs"
+                      >
+                        <div className="min-w-0 flex items-center gap-2">
+                          <span className="font-display font-bold text-sm text-[#172B4D] truncate">
+                            {cat}
+                          </span>
+                          <span className="px-2 py-0.5 text-[11px] font-mono font-medium rounded-full bg-slate-100 text-slate-600 whitespace-nowrap">
+                            {dishCount} {dishCount === 1 ? 'dish' : 'dishes'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleStartRename(cat)}
+                            className="p-2 sm:px-2.5 sm:py-1.5 min-h-[38px] text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg inline-flex items-center gap-1 cursor-pointer transition-colors"
+                            aria-label={`Rename category ${cat}`}
+                          >
+                            <Pencil className="w-3.5 h-3.5 text-slate-600" />
+                            <span className="hidden sm:inline">Rename</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenDelete(cat)}
+                            disabled={categories.length <= 1}
+                            className={`p-2 sm:px-2.5 sm:py-1.5 min-h-[38px] text-xs font-semibold rounded-lg inline-flex items-center gap-1 transition-colors ${
+                              categories.length <= 1
+                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-50'
+                                : 'text-red-700 bg-red-50 hover:bg-red-100 border border-red-200/80 cursor-pointer'
+                            }`}
+                            aria-label={`Delete category ${cat}`}
+                            title={
+                              categories.length <= 1
+                                ? 'Cannot delete the only remaining category'
+                                : `Delete ${cat}`
+                            }
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                            <span className="hidden sm:inline">Delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-5 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCategoryManager(false);
+                  setEditingCategory(null);
+                  setRenameError('');
+                  setCatManagerNewError('');
+                }}
+                className="px-4 py-2 min-h-[40px] text-xs font-semibold text-[#172B4D] bg-white border border-slate-300 hover:bg-slate-100 rounded-lg cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CATEGORY CONFIRMATION & REASSIGNMENT MODAL */}
+      {deletingCategory && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-cat-dialog-title"
+          className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs"
+        >
+          <div className="bg-white rounded-2xl border border-red-200 shadow-2xl max-w-md w-full p-5 sm:p-6 space-y-4 max-h-[90dvh] overflow-y-auto">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center text-red-600 shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 id="delete-cat-dialog-title" className="font-display font-bold text-lg text-[#172B4D]">
+                  Delete Category: {deletingCategory}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            {(() => {
+              const affectedDishes = items.filter((i) => i.category === deletingCategory);
+              const otherCategories = categories.filter((c) => c !== deletingCategory);
+
+              return (
+                <div className="space-y-3.5">
+                  {affectedDishes.length > 0 ? (
+                    <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-2">
+                      <p className="font-semibold text-[13px]">
+                        {affectedDishes.length} {affectedDishes.length === 1 ? 'dish' : 'dishes'} will be affected
+                      </p>
+                      <p className="text-slate-600 leading-relaxed">
+                        To maintain data integrity and prevent broken digital menu links, select which category these dishes should be moved to before deleting:
+                      </p>
+                      <div>
+                        <label
+                          htmlFor="reassign-select-target"
+                          className="font-bold text-slate-800 block mb-1 text-xs"
+                        >
+                          Reassign dishes to:
+                        </label>
+                        <select
+                          id="reassign-select-target"
+                          value={reassignTarget}
+                          onChange={(e) => setReassignTarget(e.target.value)}
+                          className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg min-h-[44px] font-medium text-slate-800"
+                        >
+                          {otherCategories.map((c) => {
+                            const count = items.filter((i) => i.category === c).length;
+                            return (
+                              <option key={c} value={c}>
+                                {c} ({count} existing {count === 1 ? 'dish' : 'dishes'})
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      There are currently no menu items assigned to <strong>{deletingCategory}</strong>. It will be permanently removed from your menu categories.
+                    </p>
+                  )}
+
+                  {deleteError && (
+                    <div
+                      role="alert"
+                      className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 font-medium"
+                    >
+                      {deleteError}
+                    </div>
+                  )}
+
+                  <div className="pt-2 flex items-center justify-end gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeletingCategory(null);
+                        setDeleteError('');
+                      }}
+                      className="px-4 py-2.5 min-h-[44px] text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmDelete}
+                      className="px-4 py-2.5 min-h-[44px] text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl cursor-pointer shadow-xs inline-flex items-center gap-1.5"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {affectedDishes.length > 0 ? 'Reassign & Delete' : 'Confirm Delete'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

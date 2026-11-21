@@ -12,6 +12,7 @@ import type {
   PaymentStatus,
   Restaurant,
   SelectedCustomization,
+  ServeQRState,
   SubscriptionPlan,
   SubscriptionPlanConfig,
   SubscriptionStatus,
@@ -824,4 +825,155 @@ export function validateCustomerCheckout(
     errors.otp = 'Please verify the one-time passcode sent to your mobile number.';
   }
   return errors;
+}
+
+export function validateCategoryName(
+  name: string,
+  existingCategories: string[],
+  currentName?: string
+): { valid: boolean; error?: string; cleanName: string } {
+  const cleanName = name.trim();
+  if (!cleanName) {
+    return { valid: false, error: 'Category name cannot be empty.', cleanName: '' };
+  }
+  const isDuplicate = existingCategories.some((cat) => {
+    if (currentName && cat.toLowerCase() === currentName.trim().toLowerCase()) {
+      return false;
+    }
+    return cat.toLowerCase() === cleanName.toLowerCase();
+  });
+  if (isDuplicate) {
+    return {
+      valid: false,
+      error: `A category named "${cleanName}" already exists.`,
+      cleanName,
+    };
+  }
+  return { valid: true, cleanName };
+}
+
+export function addCategoryInState(
+  state: ServeQRState,
+  restaurantId: string,
+  newCategory: string
+): { ok: boolean; error?: string; cleanName?: string; nextState: ServeQRState } {
+  const categories = state.categoriesByRestaurant[restaurantId] ?? [];
+  const validation = validateCategoryName(newCategory, categories);
+  if (!validation.valid) {
+    return { ok: false, error: validation.error, nextState: state };
+  }
+  const clean = validation.cleanName;
+  const nextState: ServeQRState = {
+    ...state,
+    categoriesByRestaurant: {
+      ...state.categoriesByRestaurant,
+      [restaurantId]: [...categories, clean],
+    },
+  };
+  return { ok: true, cleanName: clean, nextState };
+}
+
+export function renameCategoryInState(
+  state: ServeQRState,
+  restaurantId: string,
+  oldName: string,
+  newName: string
+): { ok: boolean; error?: string; nextState: ServeQRState } {
+  const categories = state.categoriesByRestaurant[restaurantId] ?? [];
+  const oldClean = oldName.trim();
+  const existingIdx = categories.findIndex((c) => c.toLowerCase() === oldClean.toLowerCase());
+  if (existingIdx === -1) {
+    return { ok: false, error: `Category "${oldName}" not found.`, nextState: state };
+  }
+  const validation = validateCategoryName(newName, categories, categories[existingIdx]);
+  if (!validation.valid) {
+    return { ok: false, error: validation.error, nextState: state };
+  }
+  const actualOldName = categories[existingIdx];
+  const finalNewName = validation.cleanName;
+
+  const nextCategories = [...categories];
+  nextCategories[existingIdx] = finalNewName;
+
+  // Atomically update menu items assigned to oldName for this restaurant only
+  const nextMenuItems = state.menuItems.map((item) => {
+    if (item.restaurantId === restaurantId && item.category === actualOldName) {
+      return { ...item, category: finalNewName };
+    }
+    return item;
+  });
+
+  const nextState: ServeQRState = {
+    ...state,
+    categoriesByRestaurant: {
+      ...state.categoriesByRestaurant,
+      [restaurantId]: nextCategories,
+    },
+    menuItems: nextMenuItems,
+  };
+
+  return { ok: true, nextState };
+}
+
+export function deleteCategoryInState(
+  state: ServeQRState,
+  restaurantId: string,
+  categoryToDelete: string,
+  reassignToCategory: string
+): { ok: boolean; error?: string; nextState: ServeQRState } {
+  const categories = state.categoriesByRestaurant[restaurantId] ?? [];
+  if (categories.length <= 1) {
+    return {
+      ok: false,
+      error: 'Cannot delete the only remaining category. A restaurant must have at least one category.',
+      nextState: state,
+    };
+  }
+
+  const delClean = categoryToDelete.trim().toLowerCase();
+  const reassignClean = reassignToCategory.trim().toLowerCase();
+
+  const toDeleteIdx = categories.findIndex((c) => c.toLowerCase() === delClean);
+  if (toDeleteIdx === -1) {
+    return { ok: false, error: `Category "${categoryToDelete}" not found.`, nextState: state };
+  }
+
+  if (delClean === reassignClean) {
+    return {
+      ok: false,
+      error: 'Reassignment category cannot be the same as the category being deleted.',
+      nextState: state,
+    };
+  }
+
+  const targetCategory = categories.find((c) => c.toLowerCase() === reassignClean);
+  if (!targetCategory) {
+    return {
+      ok: false,
+      error: `Reassignment category "${reassignToCategory}" does not exist.`,
+      nextState: state,
+    };
+  }
+
+  const actualCategoryToDelete = categories[toDeleteIdx];
+  const nextCategories = categories.filter((_, idx) => idx !== toDeleteIdx);
+
+  // Atomically reassign menu items belonging to the deleted category
+  const nextMenuItems = state.menuItems.map((item) => {
+    if (item.restaurantId === restaurantId && item.category === actualCategoryToDelete) {
+      return { ...item, category: targetCategory };
+    }
+    return item;
+  });
+
+  const nextState: ServeQRState = {
+    ...state,
+    categoriesByRestaurant: {
+      ...state.categoriesByRestaurant,
+      [restaurantId]: nextCategories,
+    },
+    menuItems: nextMenuItems,
+  };
+
+  return { ok: true, nextState };
 }

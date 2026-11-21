@@ -29,6 +29,10 @@ import {
   validateCustomizationSelections,
   validateLoginForm,
   validateTableForm,
+  validateCategoryName,
+  addCategoryInState,
+  renameCategoryInState,
+  deleteCategoryInState,
 } from './serveqrLogic';
 import type {
   CartItem,
@@ -37,6 +41,7 @@ import type {
   MenuItem,
   Order,
   Restaurant,
+  ServeQRState,
 } from './types';
 
 test('QR route building and parsing round-trips restaurant slug, table, branch, and version', () => {
@@ -451,5 +456,135 @@ test('customization validation enforces mandatory groups and cart upsert merges 
   assert.equal(cart.length, 1);
   assert.equal(cart[0].quantity, 2);
   assert.equal(cart[0].selectedCustomizations.length, 1);
+});
+
+test('Category CRUD: creation, validation, atomic renaming with dish preservation, deletion with reassignment, and tenant isolation', () => {
+  const mockState: ServeQRState = {
+    planCatalog: [],
+    restaurants: [],
+    categoriesByRestaurant: {
+      'RST-1001': ['Biryani & Rice', 'Starters', 'Desserts'],
+      'RST-1002': ['Starters', 'Beverages'],
+    },
+    menuItems: [
+      {
+        id: 'M1',
+        restaurantId: 'RST-1001',
+        name: 'Paneer Tikka',
+        description: 'Tandoori paneer',
+        imageUrl: '',
+        price: 220,
+        category: 'Starters',
+        isVeg: true,
+        available: true,
+        prepTimeMinutes: 15,
+        customizations: [],
+      },
+      {
+        id: 'M2',
+        restaurantId: 'RST-1001',
+        name: 'Gulab Jamun',
+        description: 'Sweet dumplings',
+        imageUrl: '',
+        price: 90,
+        category: 'Desserts',
+        isVeg: true,
+        available: true,
+        prepTimeMinutes: 5,
+        customizations: [],
+      },
+      {
+        id: 'M3',
+        restaurantId: 'RST-1002',
+        name: 'RST-1002 Starter',
+        description: 'Other rest starter',
+        imageUrl: '',
+        price: 150,
+        category: 'Starters',
+        isVeg: false,
+        available: true,
+        prepTimeMinutes: 10,
+        customizations: [],
+      },
+    ],
+    tables: [],
+    orders: [],
+    bills: [],
+    activities: [],
+    nextOrderSeq: 1,
+    nextRestaurantSeq: 1,
+    nextBillSeq: 1,
+  };
+
+  // 1. Creating a valid category (trims spaces)
+  const validCheck = validateCategoryName('  Wood-Fired Pizza  ', mockState.categoriesByRestaurant['RST-1001']);
+  assert.equal(validCheck.valid, true);
+  assert.equal(validCheck.cleanName, 'Wood-Fired Pizza');
+
+  const addRes = addCategoryInState(mockState, 'RST-1001', '  Wood-Fired Pizza  ');
+  assert.equal(addRes.ok, true);
+  assert.equal(addRes.nextState.categoriesByRestaurant['RST-1001'].includes('Wood-Fired Pizza'), true);
+  // RST-1002 unaffected
+  assert.deepEqual(addRes.nextState.categoriesByRestaurant['RST-1002'], ['Starters', 'Beverages']);
+
+  // 2. Rejecting empty category names
+  const emptyCheck = validateCategoryName('   ', mockState.categoriesByRestaurant['RST-1001']);
+  assert.equal(emptyCheck.valid, false);
+  assert.equal(emptyCheck.error, 'Category name cannot be empty.');
+
+  // 3. Rejecting duplicate names regardless of letter case
+  const duplicateCheck = validateCategoryName('starters', mockState.categoriesByRestaurant['RST-1001']);
+  assert.equal(duplicateCheck.valid, false);
+  assert.equal(duplicateCheck.error, 'A category named "starters" already exists.');
+
+  // 4. Renaming a category and updating every associated menu item atomically
+  const renameRes = renameCategoryInState(mockState, 'RST-1001', 'Starters', 'Appetizers & Starters');
+  assert.equal(renameRes.ok, true);
+  assert.equal(renameRes.nextState.categoriesByRestaurant['RST-1001'].includes('Appetizers & Starters'), true);
+  assert.equal(renameRes.nextState.categoriesByRestaurant['RST-1001'].includes('Starters'), false);
+
+  // 5. Associated menu items for RST-1001 updated, preserving all other properties
+  const m1Updated = renameRes.nextState.menuItems.find((m) => m.id === 'M1');
+  assert.equal(m1Updated?.category, 'Appetizers & Starters');
+  assert.equal(m1Updated?.name, 'Paneer Tikka');
+  assert.equal(m1Updated?.price, 220);
+
+  // 6. Tenant isolation: RST-1002 menu item M3 with category 'Starters' must NOT be renamed
+  const m3Untouched = renameRes.nextState.menuItems.find((m) => m.id === 'M3');
+  assert.equal(m3Untouched?.category, 'Starters');
+  assert.equal(renameRes.nextState.categoriesByRestaurant['RST-1002'].includes('Starters'), true);
+
+  // 7. Case-only renaming (e.g. 'desserts' -> 'DESSERTS')
+  const caseRenameRes = renameCategoryInState(mockState, 'RST-1001', 'Desserts', 'DESSERTS');
+  assert.equal(caseRenameRes.ok, true);
+  assert.equal(caseRenameRes.nextState.categoriesByRestaurant['RST-1001'].includes('DESSERTS'), true);
+  const m2Updated = caseRenameRes.nextState.menuItems.find((m) => m.id === 'M2');
+  assert.equal(m2Updated?.category, 'DESSERTS');
+
+  // 8. Deleting a category with menu item reassignment
+  const deleteRes = deleteCategoryInState(mockState, 'RST-1001', 'Desserts', 'Biryani & Rice');
+  assert.equal(deleteRes.ok, true);
+  assert.equal(deleteRes.nextState.categoriesByRestaurant['RST-1001'].includes('Desserts'), false);
+  assert.equal(deleteRes.nextState.categoriesByRestaurant['RST-1001'].length, 2);
+
+  // 9. Preventing orphaned menu items: M2 must now have category 'Biryani & Rice'
+  const m2Reassigned = deleteRes.nextState.menuItems.find((m) => m.id === 'M2');
+  assert.equal(m2Reassigned?.category, 'Biryani & Rice');
+
+  // 10. Cannot delete when it is the last remaining category
+  const singleCatState: ServeQRState = {
+    ...mockState,
+    categoriesByRestaurant: {
+      'RST-1001': ['OnlyCategory'],
+    },
+  };
+  const lastCatRes = deleteCategoryInState(singleCatState, 'RST-1001', 'OnlyCategory', 'AnyOther');
+  assert.equal(lastCatRes.ok, false);
+  assert.match(lastCatRes.error ?? '', /Cannot delete the only remaining category/);
+
+  // 11. Cannot reassign to the same category being deleted
+  const selfReassignRes = deleteCategoryInState(mockState, 'RST-1001', 'Desserts', 'Desserts');
+  assert.equal(selfReassignRes.ok, false);
+  assert.match(selfReassignRes.error ?? '', /cannot be the same/);
 });
 

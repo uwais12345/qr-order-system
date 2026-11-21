@@ -1,10 +1,12 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { createInitialSeedState, DEFAULT_CATEGORIES } from '../domain/seedData';
 import {
+  addCategoryInState,
   calculateBillTotals,
   calculateCartItemUnitPrice,
   calculateOrderTotals,
   computeDefaultExpiryDate,
+  deleteCategoryInState,
   generateBillId,
   generateBranchId,
   generateInviteToken,
@@ -14,6 +16,7 @@ import {
   generateTableId,
   getPlanConfig,
   normalizeSubscriptionStatus,
+  renameCategoryInState,
   resolvePaymentStatus,
   slugifyRestaurantName,
   SUBSCRIPTION_PLANS,
@@ -162,7 +165,17 @@ interface ServeQRContextValue {
     updates: { name: string; address: string; city: string; phone: string }
   ) => void;
   updateRestaurantSettings: (restaurantId: string, settings: RestaurantSettings) => void;
-  addCategory: (restaurantId: string, category: string) => void;
+  addCategory: (restaurantId: string, category: string) => { ok: boolean; error?: string };
+  renameCategory: (
+    restaurantId: string,
+    oldName: string,
+    newName: string
+  ) => { ok: boolean; error?: string };
+  deleteCategory: (
+    restaurantId: string,
+    categoryToDelete: string,
+    reassignToCategory: string
+  ) => { ok: boolean; error?: string };
   addMenuItem: (item: Omit<MenuItem, 'id'>) => MenuItem;
   updateMenuItem: (itemId: string, updates: Partial<Omit<MenuItem, 'id' | 'restaurantId'>>) => void;
   deleteMenuItem: (itemId: string) => void;
@@ -926,20 +939,61 @@ export const ServeQRProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 
   const addCategory = useCallback(
-    (restaurantId: string, category: string) => {
-      const clean = category.trim();
-      if (!clean) return;
+    (restaurantId: string, category: string): { ok: boolean; error?: string } => {
+      let result: { ok: boolean; error?: string } = { ok: true };
       commitState((prev) => {
-        const existing = prev.categoriesByRestaurant[restaurantId] ?? [];
-        if (existing.some((c) => c.toLowerCase() === clean.toLowerCase())) return prev;
-        return {
-          ...prev,
-          categoriesByRestaurant: {
-            ...prev.categoriesByRestaurant,
-            [restaurantId]: [...existing, clean],
-          },
-        };
+        const res = addCategoryInState(prev, restaurantId, category);
+        if (!res.ok) {
+          result = { ok: false, error: res.error };
+          return prev;
+        }
+        result = { ok: true };
+        return res.nextState;
       });
+      return result;
+    },
+    [commitState]
+  );
+
+  const renameCategory = useCallback(
+    (restaurantId: string, oldName: string, newName: string): { ok: boolean; error?: string } => {
+      let result: { ok: boolean; error?: string } = { ok: true };
+      commitState((prev) => {
+        const res = renameCategoryInState(prev, restaurantId, oldName, newName);
+        if (!res.ok) {
+          result = { ok: false, error: res.error };
+          return prev;
+        }
+        result = { ok: true };
+        return res.nextState;
+      });
+      return result;
+    },
+    [commitState]
+  );
+
+  const deleteCategory = useCallback(
+    (
+      restaurantId: string,
+      categoryToDelete: string,
+      reassignToCategory: string
+    ): { ok: boolean; error?: string } => {
+      let result: { ok: boolean; error?: string } = { ok: true };
+      commitState((prev) => {
+        const res = deleteCategoryInState(
+          prev,
+          restaurantId,
+          categoryToDelete,
+          reassignToCategory
+        );
+        if (!res.ok) {
+          result = { ok: false, error: res.error };
+          return prev;
+        }
+        result = { ok: true };
+        return res.nextState;
+      });
+      return result;
     },
     [commitState]
   );
@@ -1302,6 +1356,8 @@ export const ServeQRProvider: React.FC<{ children: React.ReactNode }> = ({ child
       updateBranchInfo,
       updateRestaurantSettings,
       addCategory,
+      renameCategory,
+      deleteCategory,
       addMenuItem,
       updateMenuItem,
       deleteMenuItem,
@@ -1337,6 +1393,8 @@ export const ServeQRProvider: React.FC<{ children: React.ReactNode }> = ({ child
       updateBranchInfo,
       updateRestaurantSettings,
       addCategory,
+      renameCategory,
+      deleteCategory,
       addMenuItem,
       updateMenuItem,
       deleteMenuItem,
