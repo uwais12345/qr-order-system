@@ -136,9 +136,9 @@ export const RestaurantSubscriptionView: React.FC<RestaurantSubscriptionViewProp
         </div>
 
         {/* Key Validity & Dates Strip */}
-        <div className="p-6 space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+        <div className="p-4 sm:p-6 space-y-5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
+            <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
               <p className="text-[11px] font-medium text-slate-500 flex items-center gap-1.5">
                 <CreditCard className="w-3.5 h-3.5 text-slate-400" />
                 Billing Cycle
@@ -147,31 +147,31 @@ export const RestaurantSubscriptionView: React.FC<RestaurantSubscriptionViewProp
                 {restaurant.billingCycle}
               </p>
             </div>
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+            <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
               <p className="text-[11px] font-medium text-slate-500 flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-slate-400" />
                 Start Date
               </p>
-              <p className="font-mono font-bold text-sm text-[#172B4D] mt-1 tabular-nums">
+              <p className="font-mono font-bold text-xs sm:text-sm text-[#172B4D] mt-1 tabular-nums">
                 {restaurant.subscriptionStartDate}
               </p>
             </div>
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+            <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
               <p className="text-[11px] font-medium text-slate-500 flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-slate-400" />
                 Expiry Date
               </p>
-              <p className="font-mono font-bold text-sm text-[#172B4D] mt-1 tabular-nums">
+              <p className="font-mono font-bold text-xs sm:text-sm text-[#172B4D] mt-1 tabular-nums">
                 {restaurant.subscriptionExpiryDate}
               </p>
             </div>
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+            <div className="p-3 sm:p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
               <p className="text-[11px] font-medium text-slate-500 flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-                Remaining Validity
+                Remaining
               </p>
               <p
-                className={`font-mono font-bold text-sm mt-1 tabular-nums ${
+                className={`font-mono font-bold text-xs sm:text-sm mt-1 tabular-nums ${
                   validity.isOrderAcceptanceAllowed ? 'text-[#087F5B]' : 'text-red-700'
                 }`}
               >
@@ -239,7 +239,8 @@ export const RestaurantSubscriptionView: React.FC<RestaurantSubscriptionViewProp
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse text-sm">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500">
@@ -282,6 +283,33 @@ export const RestaurantSubscriptionView: React.FC<RestaurantSubscriptionViewProp
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Cards View (< md) */}
+        <div className="block md:hidden divide-y divide-slate-100">
+          {restaurant.subscriptionBillingHistory.length === 0 ? (
+            <div className="py-8 text-center text-xs text-slate-500">
+              No subscription invoices recorded yet.
+            </div>
+          ) : (
+            restaurant.subscriptionBillingHistory.map((inv) => (
+              <div key={inv.id} className="p-4 space-y-2 bg-white">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-xs font-semibold text-[#172B4D]">{inv.id}</span>
+                  <StatusLabel status={inv.status} badge />
+                </div>
+                <div className="text-xs font-medium text-slate-800">{inv.description}</div>
+                <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
+                  <span>
+                    {inv.date} · {inv.billingCycle}
+                  </span>
+                  <span className="font-mono text-xs font-bold text-[#172B4D]">
+                    {formatCurrency(inv.amountInr)}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </section>
 

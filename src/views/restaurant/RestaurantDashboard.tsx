@@ -70,18 +70,18 @@ export const RestaurantDashboard: React.FC<RestaurantDashboardProps> = ({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => onNavigateSection('kds')}
-            className="px-4 py-2 text-xs font-semibold text-[#172B4D] bg-white border border-slate-300 hover:bg-slate-50 rounded-lg cursor-pointer whitespace-nowrap"
+            className="px-3.5 py-2 min-h-[40px] text-xs font-semibold text-[#172B4D] bg-white border border-slate-300 hover:bg-slate-50 rounded-lg cursor-pointer whitespace-nowrap shadow-xs"
           >
             Open Kitchen Display
           </button>
           <button
             type="button"
             onClick={() => onNavigateSection('billing')}
-            className="px-4 py-2 text-xs font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer whitespace-nowrap"
+            className="px-3.5 py-2 min-h-[40px] text-xs font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer whitespace-nowrap shadow-xs"
           >
             Cashier &amp; Billing
           </button>
@@ -215,7 +215,8 @@ export const RestaurantDashboard: React.FC<RestaurantDashboardProps> = ({
               All orders <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
-          <div className="overflow-x-auto">
+          {/* Desktop Recent Orders Table (md and above) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500">
@@ -235,7 +236,7 @@ export const RestaurantDashboard: React.FC<RestaurantDashboardProps> = ({
                   </tr>
                 ) : (
                   orders.slice(0, 6).map((order) => (
-                    <tr key={order.id} className="hover:bg-slate-50/70">
+                    <tr key={order.id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="py-3 px-5">
                         <p className="font-mono text-xs font-semibold text-[#172B4D]">{order.id}</p>
                         <p className="text-xs text-slate-500">
@@ -259,6 +260,35 @@ export const RestaurantDashboard: React.FC<RestaurantDashboardProps> = ({
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Recent Orders Cards (below md) */}
+          <div className="block md:hidden divide-y divide-slate-100 p-3 space-y-2.5">
+            {orders.length === 0 ? (
+              <p className="py-6 text-center text-xs text-slate-500">No orders yet.</p>
+            ) : (
+              orders.slice(0, 5).map((order) => (
+                <div key={order.id} className="pt-2.5 first:pt-0 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-[#172B4D]">{order.id}</span>
+                      <span className="text-[11px] font-mono text-[#087F5B] bg-emerald-50 px-1.5 py-0.5 rounded font-semibold">
+                        Table {order.tableNumber}
+                      </span>
+                    </div>
+                    <StatusLabel status={order.status} />
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-slate-600">
+                    <span className="truncate max-w-[190px]">
+                      {order.items.map((i) => `${i.quantity}× ${i.name}`).join(', ')}
+                    </span>
+                    <span className="font-mono font-bold text-[#172B4D] tabular-nums shrink-0">
+                      {formatCurrency(order.totalAmount, cur)}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </section>
 

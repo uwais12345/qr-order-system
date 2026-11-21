@@ -149,8 +149,8 @@ export const TableManagementView: React.FC<TableManagementViewProps> = ({
         ))}
       </div>
 
-      {/* Table Directory */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+      {/* Table Directory (Desktop: md and above) */}
+      <div className="hidden md:block bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-sm">
             <thead>
@@ -180,7 +180,7 @@ export const TableManagementView: React.FC<TableManagementViewProps> = ({
                       o.status !== 'Cancelled'
                   ).length;
                   return (
-                    <tr key={table.id} className="hover:bg-slate-50/70">
+                    <tr key={table.id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="py-3.5 px-6 font-mono font-bold text-[#172B4D]">
                         {table.tableNumber}
                       </td>
@@ -240,30 +240,126 @@ export const TableManagementView: React.FC<TableManagementViewProps> = ({
         </div>
       </div>
 
+      {/* Mobile Table Cards (screens below md: 320px - 767px) */}
+      <div className="block md:hidden space-y-3">
+        {filteredTables.length === 0 ? (
+          <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-sm text-slate-500">
+            No dining tables configured in this section.
+          </div>
+        ) : (
+          filteredTables.map((table) => {
+            const activeOrdersCount = orders.filter(
+              (o) =>
+                o.tableNumber === table.tableNumber &&
+                o.status !== 'Completed' &&
+                o.status !== 'Cancelled'
+            ).length;
+            return (
+              <article
+                key={table.id}
+                className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-xs"
+              >
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-base font-bold text-[#172B4D]">
+                      Table {table.tableNumber}
+                    </span>
+                    <span className="text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                      {table.section}
+                    </span>
+                  </div>
+                  <StatusLabel status={table.status} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs text-slate-600">
+                  <div className="bg-slate-50 p-2.5 rounded-lg">
+                    <span className="text-slate-400 block text-[11px]">Capacity</span>
+                    <span className="font-bold font-mono text-[#172B4D] text-sm">
+                      {table.capacity} Seats
+                    </span>
+                  </div>
+                  <div className="bg-slate-50 p-2.5 rounded-lg">
+                    <span className="text-slate-400 block text-[11px]">Active Orders</span>
+                    <span
+                      className={`font-bold font-mono text-sm ${
+                        activeOrdersCount > 0 ? 'text-[#087F5B]' : 'text-slate-600'
+                      }`}
+                    >
+                      {activeOrdersCount} {activeOrdersCount === 1 ? 'Order' : 'Orders'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Status selector and actions */}
+                <div className="pt-1 flex flex-col gap-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <label htmlFor={`tbl-status-${table.id}`} className="text-xs font-semibold text-slate-700">
+                      Change Status:
+                    </label>
+                    <select
+                      id={`tbl-status-${table.id}`}
+                      aria-label={`Change status for table ${table.tableNumber}`}
+                      value={table.status}
+                      onChange={(e) =>
+                        updateTable(table.id, { status: e.target.value as TableStatus })
+                      }
+                      className="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 min-h-[38px] bg-white font-medium text-slate-800"
+                    >
+                      <option value="Available">Available</option>
+                      <option value="Occupied">Occupied</option>
+                      <option value="Reserved">Reserved</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => openEdit(table)}
+                      className="flex-1 min-h-[42px] px-3 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-slate-600" />
+                      Edit Table
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteTable(table.id)}
+                      className="min-h-[42px] px-3.5 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200/80 rounded-xl inline-flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </article>
+            );
+          })
+        )}
+      </div>
+
       {/* Add/Edit Table Modal */}
       {modalOpen && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="table-modal-title"
         >
-          <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 id="table-modal-title" className="font-display text-lg font-bold text-[#172B4D]">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden max-h-[90dvh] flex flex-col">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+              <h3 id="table-modal-title" className="font-display text-base font-bold text-[#172B4D]">
                 {editingTable ? `Edit Table ${editingTable.tableNumber}` : 'Add Dining Table'}
               </h3>
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
                 aria-label="Close table modal"
-                className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label htmlFor="tbl-num" className="block text-xs font-semibold text-slate-700 mb-1">
                   Table Number *
@@ -274,7 +370,7 @@ export const TableManagementView: React.FC<TableManagementViewProps> = ({
                   value={form.tableNumber}
                   onChange={(e) => setForm({ ...form, tableNumber: e.target.value.toUpperCase() })}
                   placeholder="T06"
-                  className={`w-full px-3 py-2 text-sm font-mono border rounded-lg ${
+                  className={`w-full px-3 py-2.5 text-sm font-mono border rounded-xl min-h-[44px] ${
                     errors.tableNumber ? 'border-red-400' : 'border-slate-300'
                   }`}
                 />
@@ -294,7 +390,7 @@ export const TableManagementView: React.FC<TableManagementViewProps> = ({
                   value={form.section}
                   onChange={(e) => setForm({ ...form, section: e.target.value })}
                   placeholder="Main Hall"
-                  className={`w-full px-3 py-2 text-sm border rounded-lg ${
+                  className={`w-full px-3 py-2.5 text-sm border rounded-xl min-h-[44px] ${
                     errors.section ? 'border-red-400' : 'border-slate-300'
                   }`}
                 />
@@ -320,7 +416,7 @@ export const TableManagementView: React.FC<TableManagementViewProps> = ({
                     max="24"
                     value={form.capacity}
                     onChange={(e) => setForm({ ...form, capacity: e.target.value })}
-                    className={`w-full px-3 py-2 text-sm font-mono border rounded-lg ${
+                    className={`w-full px-3 py-2.5 text-sm font-mono border rounded-xl min-h-[44px] ${
                       errors.capacity ? 'border-red-400' : 'border-slate-300'
                     }`}
                   />
@@ -333,7 +429,7 @@ export const TableManagementView: React.FC<TableManagementViewProps> = ({
                     id="tbl-status"
                     value={form.status}
                     onChange={(e) => setForm({ ...form, status: e.target.value as TableStatus })}
-                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white"
+                    className="w-full px-3 py-2.5 text-sm border border-slate-300 rounded-xl min-h-[44px] bg-white"
                   >
                     <option value="Available">Available</option>
                     <option value="Occupied">Occupied</option>
@@ -346,13 +442,13 @@ export const TableManagementView: React.FC<TableManagementViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-slate-600 cursor-pointer"
+                  className="px-4 py-2.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl cursor-pointer min-h-[44px]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer"
+                  className="px-5 py-2.5 text-xs font-bold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-xl cursor-pointer min-h-[44px] shadow-xs"
                 >
                   {editingTable ? 'Save Table' : 'Create Table'}
                 </button>

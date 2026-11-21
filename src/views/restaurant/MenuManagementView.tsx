@@ -675,8 +675,8 @@ export const MenuManagementView: React.FC<MenuManagementViewProps> = ({ restaura
           aria-modal="true"
           aria-labelledby="menu-item-modal-title"
         >
-          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-xl overflow-hidden my-8">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-xl overflow-hidden my-4 sm:my-8 max-h-[90dvh] flex flex-col shadow-2xl">
+            <div className="px-5 sm:px-6 py-4 border-b border-slate-200 flex items-center justify-between shrink-0">
               <h3 id="menu-item-modal-title" className="font-display text-lg font-bold text-[#172B4D]">
                 {editingItem ? `Edit ${editingItem.name}` : 'Add Food Item'}
               </h3>
@@ -684,13 +684,13 @@ export const MenuManagementView: React.FC<MenuManagementViewProps> = ({ restaura
                 type="button"
                 onClick={() => setModalOpen(false)}
                 aria-label="Close modal"
-                className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                className="p-2 -mr-1 text-slate-400 hover:text-slate-700 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
                   <label htmlFor="mi-name" className="block text-xs font-semibold text-slate-700 mb-1">
@@ -1052,7 +1052,7 @@ export const MenuManagementView: React.FC<MenuManagementViewProps> = ({ restaura
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+              <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer">
                   <input
                     type="checkbox"
@@ -1062,17 +1062,17 @@ export const MenuManagementView: React.FC<MenuManagementViewProps> = ({ restaura
                   />
                   Available on digital menu immediately
                 </label>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setModalOpen(false)}
-                    className="px-4 py-2 text-sm font-medium text-slate-600 cursor-pointer"
+                    className="px-4 py-2 min-h-[44px] text-sm font-medium text-slate-600 cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer"
+                    className="px-4 py-2 min-h-[44px] text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer"
                   >
                     {editingItem ? 'Save Item' : 'Add Item'}
                   </button>

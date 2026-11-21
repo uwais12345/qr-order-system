@@ -92,8 +92,8 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ restaurant }) => {
         </div>
       </div>
 
-      {/* Orders Table */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+      {/* Desktop Orders Table (md and above) */}
+      <div className="hidden md:block bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-sm">
             <thead>
@@ -121,7 +121,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ restaurant }) => {
                   const totalQty = order.items.reduce((s, i) => s + i.quantity, 0);
                   const nextStatus = getNextOrderStatus(order.status);
                   return (
-                    <tr key={order.id} className="hover:bg-slate-50/70">
+                    <tr key={order.id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="py-3.5 px-5 font-mono text-xs font-bold text-[#172B4D] whitespace-nowrap">
                         {order.id}
                       </td>
@@ -186,7 +186,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ restaurant }) => {
                             <button
                               type="button"
                               onClick={() => updateOrderStatus(order.id, nextStatus)}
-                              className="px-2.5 py-1 text-xs font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-md cursor-pointer"
+                              className="px-2.5 py-1 text-xs font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-md cursor-pointer transition-colors"
                             >
                               Mark {nextStatus}
                             </button>
@@ -195,7 +195,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ restaurant }) => {
                             <button
                               type="button"
                               onClick={() => updateOrderStatus(order.id, 'Cancelled')}
-                              className="px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-md cursor-pointer"
+                              className="px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-md cursor-pointer transition-colors"
                             >
                               Cancel
                             </button>
@@ -209,6 +209,124 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ restaurant }) => {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Mobile Orders Card View (screens below md: 320px - 767px) */}
+      <div className="block md:hidden space-y-3">
+        {filteredOrders.length === 0 ? (
+          <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-sm text-slate-500">
+            No orders match the current filter.
+          </div>
+        ) : (
+          filteredOrders.map((order) => {
+            const totalQty = order.items.reduce((s, i) => s + i.quantity, 0);
+            const nextStatus = getNextOrderStatus(order.status);
+            return (
+              <article
+                key={order.id}
+                className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-xs"
+              >
+                {/* Header Row: Table Badge, Order ID & Status */}
+                <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-1 rounded-lg bg-[#087F5B]/10 text-[#087F5B] font-mono font-bold text-xs">
+                      Table {order.tableNumber}
+                    </span>
+                    <span className="font-mono text-xs font-bold text-[#172B4D]">
+                      {order.id}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <StatusLabel status={order.status} />
+                    <span className="text-[11px] font-mono text-slate-400 tabular-nums">
+                      {new Date(order.createdAt).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Customer Details */}
+                <div className="text-xs text-slate-600 flex items-center justify-between">
+                  <span className="font-semibold text-[#172B4D]">
+                    {order.customerName || 'Walk-in Guest'}
+                  </span>
+                  {order.customerPhone && (
+                    <span className="font-mono text-slate-500">{order.customerPhone}</span>
+                  )}
+                </div>
+
+                {/* Items Breakdown */}
+                <div className="bg-slate-50/80 rounded-lg p-2.5 space-y-1.5 text-xs text-slate-700">
+                  {order.items.map((item) => (
+                    <div key={item.id} className="flex items-start justify-between gap-2">
+                      <span className="leading-snug">
+                        <strong className="text-[#172B4D] font-mono">{item.quantity}×</strong>{' '}
+                        {item.name}
+                        {item.selectedCustomizations.length > 0 && (
+                          <span className="text-slate-400 block text-[11px]">
+                            {item.selectedCustomizations.map((c) => c.choiceLabel).join(', ')}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="pt-1 border-t border-slate-200/60 flex justify-between text-[11px] text-slate-500 font-medium">
+                    <span>Total items</span>
+                    <span className="font-mono font-semibold text-slate-700">{totalQty}</span>
+                  </div>
+                </div>
+
+                {/* Amount and Payment Status */}
+                <div className="flex items-center justify-between text-xs pt-0.5">
+                  <div>
+                    <span className="text-slate-500">Total: </span>
+                    <span className="font-mono font-bold text-base text-[#172B4D] tabular-nums">
+                      {formatCurrency(order.totalAmount, cur)}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span
+                      className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                        order.paymentStatus === 'Paid'
+                          ? 'bg-emerald-50 text-[#087F5B]'
+                          : 'bg-amber-50 text-amber-700'
+                      }`}
+                    >
+                      {order.paymentStatus}
+                    </span>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      {order.orderPaymentMethod ?? 'Pay at Restaurant'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Order Status Action Buttons (touch friendly: min-h-[44px]) */}
+                <div className="pt-1 flex items-center gap-2">
+                  {nextStatus && order.status !== 'Cancelled' && (
+                    <button
+                      type="button"
+                      onClick={() => updateOrderStatus(order.id, nextStatus)}
+                      className="flex-1 min-h-[44px] px-4 py-2 text-xs font-bold text-white bg-[#087F5B] hover:bg-[#06674A] active:bg-[#05513A] rounded-xl cursor-pointer transition-colors text-center shadow-xs"
+                    >
+                      Mark as {nextStatus}
+                    </button>
+                  )}
+                  {(order.status === 'Pending' || order.status === 'Accepted') && (
+                    <button
+                      type="button"
+                      onClick={() => updateOrderStatus(order.id, 'Cancelled')}
+                      className="min-h-[44px] px-3.5 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl cursor-pointer transition-colors"
+                    >
+                      Cancel Order
+                    </button>
+                  )}
+                </div>
+              </article>
+            );
+          })
+        )}
       </div>
     </div>
   );

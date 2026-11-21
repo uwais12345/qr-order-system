@@ -76,13 +76,13 @@ export const RestaurantReportsView: React.FC<RestaurantProps> = ({ restaurant })
           </p>
         </div>
 
-        <div className="inline-flex p-1 bg-slate-200/70 rounded-lg self-start">
+        <div className="w-full sm:w-auto grid grid-cols-3 sm:inline-flex p-1 bg-slate-200/70 rounded-lg self-start">
           {(['Daily', 'Weekly', 'Monthly'] as const).map((p) => (
             <button
               key={p}
               type="button"
               onClick={() => setPeriod(p)}
-              className={`px-3.5 py-1.5 text-xs font-semibold rounded-md cursor-pointer ${
+              className={`px-3 py-2 min-h-[40px] text-xs font-semibold rounded-md cursor-pointer text-center transition-all ${
                 period === p
                   ? 'bg-white text-[#172B4D] shadow-xs'
                   : 'text-slate-600 hover:text-[#172B4D]'
@@ -275,20 +275,66 @@ export const RestaurantSettingsView: React.FC<RestaurantProps> = ({ restaurant }
       setLogoError('Please upload a PNG, JPG, SVG, or WebP image file.');
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      setLogoError('Logo image must be smaller than 2 MB.');
+    if (file.size > 5 * 1024 * 1024) {
+      setLogoError('Logo image must be smaller than 5 MB.');
       return;
     }
     setLogoError('');
     const reader = new FileReader();
     reader.onload = () => {
-      const dataUrl = typeof reader.result === 'string' ? reader.result : undefined;
-      if (dataUrl) {
-        setLogoPreview(dataUrl);
-        updateRestaurantBranding(restaurant.id, { logoImageUrl: dataUrl });
+      const rawDataUrl = typeof reader.result === 'string' ? reader.result : undefined;
+      if (!rawDataUrl) return;
+
+      // For vector SVG, store directly
+      if (file.type === 'image/svg+xml') {
+        setLogoPreview(rawDataUrl);
+        updateRestaurantBranding(restaurant.id, { logoImageUrl: rawDataUrl });
         setSavedBanner(true);
         window.setTimeout(() => setSavedBanner(false), 2500);
+        return;
       }
+
+      // For bitmap images, resize using offscreen canvas to max 256x256 px (~15-30KB)
+      // This protects localStorage from quota overflow while ensuring razor-sharp avatar display
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 256;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, w, h);
+          const optimizedUrl = canvas.toDataURL('image/jpeg', 0.85);
+          setLogoPreview(optimizedUrl);
+          updateRestaurantBranding(restaurant.id, { logoImageUrl: optimizedUrl });
+          setSavedBanner(true);
+          window.setTimeout(() => setSavedBanner(false), 2500);
+        } else {
+          setLogoPreview(rawDataUrl);
+          updateRestaurantBranding(restaurant.id, { logoImageUrl: rawDataUrl });
+          setSavedBanner(true);
+          window.setTimeout(() => setSavedBanner(false), 2500);
+        }
+      };
+      img.onerror = () => {
+        setLogoPreview(rawDataUrl);
+        updateRestaurantBranding(restaurant.id, { logoImageUrl: rawDataUrl });
+        setSavedBanner(true);
+        window.setTimeout(() => setSavedBanner(false), 2500);
+      };
+      img.src = rawDataUrl;
     };
     reader.readAsDataURL(file);
     e.target.value = '';

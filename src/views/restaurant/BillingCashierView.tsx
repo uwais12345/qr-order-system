@@ -108,11 +108,11 @@ export const BillingCashierView: React.FC<BillingCashierViewProps> = ({ restaura
           </p>
         </div>
 
-        <div className="inline-flex p-1 bg-slate-200/70 rounded-lg self-start">
+        <div className="w-full sm:w-auto grid grid-cols-2 sm:flex p-1 bg-slate-200/70 rounded-lg self-start">
           <button
             type="button"
             onClick={() => setBillingMode('combined')}
-            className={`px-3.5 py-1.5 text-xs font-semibold rounded-md cursor-pointer whitespace-nowrap ${
+            className={`px-3.5 py-2 min-h-[40px] text-xs font-semibold rounded-md cursor-pointer whitespace-nowrap text-center transition-all ${
               billingMode === 'combined'
                 ? 'bg-white text-[#172B4D] shadow-xs'
                 : 'text-slate-600 hover:text-[#172B4D]'
@@ -123,7 +123,7 @@ export const BillingCashierView: React.FC<BillingCashierViewProps> = ({ restaura
           <button
             type="button"
             onClick={() => setBillingMode('individual')}
-            className={`px-3.5 py-1.5 text-xs font-semibold rounded-md cursor-pointer whitespace-nowrap ${
+            className={`px-3.5 py-2 min-h-[40px] text-xs font-semibold rounded-md cursor-pointer whitespace-nowrap text-center transition-all ${
               billingMode === 'individual'
                 ? 'bg-white text-[#172B4D] shadow-xs'
                 : 'text-slate-600 hover:text-[#172B4D]'
@@ -399,13 +399,18 @@ export const BillingCashierView: React.FC<BillingCashierViewProps> = ({ restaura
       </div>
 
       {/* Settled Receipts History */}
-      <section className="bg-white border border-slate-200 rounded-xl overflow-hidden no-print">
-        <div className="px-6 py-4 border-b border-slate-100">
+      <section className="bg-white border border-slate-200 rounded-xl overflow-hidden no-print shadow-xs">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <h3 className="font-display text-base font-bold text-[#172B4D]">
             Recent Receipts ({bills.length})
           </h3>
+          <span className="text-xs text-slate-500 font-mono">
+            {bills.filter((b) => b.paymentStatus === 'Paid').length} paid
+          </span>
         </div>
-        <div className="overflow-x-auto">
+
+        {/* Desktop Receipts Table (md and above) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse text-sm">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100 text-xs font-semibold text-slate-500">
@@ -428,7 +433,7 @@ export const BillingCashierView: React.FC<BillingCashierViewProps> = ({ restaura
                 </tr>
               ) : (
                 bills.map((bill) => (
-                  <tr key={bill.id} className="hover:bg-slate-50/70">
+                  <tr key={bill.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-3 px-5 font-mono text-xs font-bold text-[#172B4D]">
                       {bill.receiptNumber}
                     </td>
@@ -461,18 +466,60 @@ export const BillingCashierView: React.FC<BillingCashierViewProps> = ({ restaura
             </tbody>
           </table>
         </div>
+
+        {/* Mobile Receipts Cards (screens below md: 320px - 767px) */}
+        <div className="block md:hidden divide-y divide-slate-100 p-3 space-y-3">
+          {bills.length === 0 ? (
+            <p className="py-6 text-center text-xs text-slate-500">No receipts generated yet.</p>
+          ) : (
+            bills.map((bill) => (
+              <div
+                key={bill.id}
+                className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-3.5 space-y-2.5"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold text-[#172B4D]">
+                      {bill.receiptNumber}
+                    </span>
+                    <span className="text-[11px] font-mono text-[#087F5B] bg-emerald-50 px-2 py-0.5 rounded font-semibold">
+                      Table {bill.tableNumber}
+                    </span>
+                  </div>
+                  <StatusLabel status={bill.paymentStatus} />
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-slate-600">
+                  <span className="capitalize">{bill.mode} mode · {bill.paymentMethod}</span>
+                  <span className="font-mono font-bold text-sm text-[#172B4D] tabular-nums">
+                    {formatCurrency(bill.totalAmount, cur)}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveReceipt(bill)}
+                  className="w-full min-h-[44px] py-2 px-3 text-xs font-bold text-[#087F5B] bg-white border border-[#087F5B]/30 hover:bg-emerald-50 rounded-lg cursor-pointer transition-colors text-center inline-flex items-center justify-center gap-1.5 shadow-2xs"
+                >
+                  <Receipt className="w-3.5 h-3.5" />
+                  View &amp; Print Receipt
+                </button>
+              </div>
+            ))
+          )}
+        </div>
       </section>
 
-      {/* Receipt Modal */}
+      {/* Printable Receipt Modal */}
       {activeReceipt && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/55 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-slate-900/55 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="receipt-modal-title"
         >
-          <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between no-print">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-xl flex flex-col max-h-[90dvh] overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80 no-print">
               <h3 id="receipt-modal-title" className="font-display text-base font-bold text-[#172B4D]">
                 Payment Receipt · {activeReceipt.receiptNumber}
               </h3>
@@ -480,13 +527,13 @@ export const BillingCashierView: React.FC<BillingCashierViewProps> = ({ restaura
                 type="button"
                 onClick={() => setActiveReceipt(null)}
                 aria-label="Close receipt modal"
-                className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4 text-sm">
+            <div className="p-5 sm:p-6 space-y-4 text-sm overflow-y-auto flex-1">
               <div className="text-center border-b border-dashed border-slate-300 pb-4">
                 <p className="font-display text-lg font-bold text-[#172B4D]">{restaurant.name}</p>
                 <p className="text-xs text-slate-500">{restaurant.branches[0]?.name}</p>
@@ -561,11 +608,11 @@ export const BillingCashierView: React.FC<BillingCashierViewProps> = ({ restaura
               </div>
             </div>
 
-            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2 no-print">
+            <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5 no-print">
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#172B4D] hover:bg-[#10203A] rounded-lg cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 min-h-[44px] text-xs font-semibold text-white bg-[#172B4D] hover:bg-[#10203A] rounded-xl cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
                 Print Receipt
@@ -573,7 +620,7 @@ export const BillingCashierView: React.FC<BillingCashierViewProps> = ({ restaura
               <button
                 type="button"
                 onClick={() => setActiveReceipt(null)}
-                className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg cursor-pointer"
+                className="px-4 py-2.5 min-h-[44px] text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 rounded-xl cursor-pointer"
               >
                 Close
               </button>

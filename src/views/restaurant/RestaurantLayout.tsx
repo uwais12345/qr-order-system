@@ -97,7 +97,7 @@ export const RestaurantLayout: React.FC<RestaurantLayoutProps> = ({
         <button
           type="button"
           onClick={() => setMobileMenuOpen(false)}
-          className="lg:hidden p-1.5 text-slate-300 hover:text-white cursor-pointer"
+          className="lg:hidden p-2 text-slate-300 hover:text-white cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg"
           aria-label="Close navigation"
         >
           <X className="w-5 h-5" />
@@ -127,7 +127,7 @@ export const RestaurantLayout: React.FC<RestaurantLayoutProps> = ({
                 onSelectSection(item.id);
                 setMobileMenuOpen(false);
               }}
-              className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
+              className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 min-h-[44px] rounded-lg text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
                 active
                   ? 'bg-[#087F5B] text-white'
                   : 'text-slate-300 hover:bg-white/8 hover:text-white'
@@ -163,7 +163,7 @@ export const RestaurantLayout: React.FC<RestaurantLayoutProps> = ({
         <button
           type="button"
           onClick={onLogout}
-          className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-slate-300 hover:bg-white/8 hover:text-white transition-colors cursor-pointer"
+          className="w-full flex items-center gap-3 px-3.5 py-2.5 min-h-[44px] rounded-lg text-sm font-medium text-slate-300 hover:bg-white/8 hover:text-white transition-colors cursor-pointer"
         >
           <LogOut className="w-4 h-4 shrink-0" />
           <span>Sign Out</span>
@@ -180,10 +180,12 @@ export const RestaurantLayout: React.FC<RestaurantLayoutProps> = ({
 
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex no-print">
-          <div className="w-64 bg-[#172B4D] text-white h-full shadow-xl">{renderSidebar()}</div>
+          <div className="w-64 max-w-[85vw] bg-[#172B4D] text-white h-full shadow-xl">
+            {renderSidebar()}
+          </div>
           <button
             type="button"
-            className="flex-1 bg-slate-900/50"
+            className="flex-1 bg-slate-900/50 cursor-pointer"
             aria-label="Close sidebar overlay"
             onClick={() => setMobileMenuOpen(false)}
           />
@@ -196,7 +198,7 @@ export const RestaurantLayout: React.FC<RestaurantLayoutProps> = ({
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 -ml-2 text-slate-600 hover:text-[#172B4D] cursor-pointer"
+              className="lg:hidden p-2 -ml-2 text-slate-600 hover:text-[#172B4D] cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg"
               aria-label="Open restaurant menu"
             >
               <Menu className="w-5 h-5" />
@@ -208,7 +210,7 @@ export const RestaurantLayout: React.FC<RestaurantLayoutProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => onSelectSection('subscription')}
@@ -220,7 +222,7 @@ export const RestaurantLayout: React.FC<RestaurantLayoutProps> = ({
             <button
               type="button"
               onClick={() => onSelectSection('kds')}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#172B4D] bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap cursor-pointer"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[40px] text-xs font-semibold text-[#172B4D] bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap cursor-pointer"
             >
               <ChefHat className="w-4 h-4 text-[#087F5B]" />
               Kitchen Display
@@ -228,7 +230,7 @@ export const RestaurantLayout: React.FC<RestaurantLayoutProps> = ({
             <button
               type="button"
               onClick={() => onSelectSection('qr')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg transition-colors whitespace-nowrap cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 min-h-[40px] text-xs font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg transition-colors whitespace-nowrap cursor-pointer"
             >
               <QrCode className="w-4 h-4" />
               Table QRs
