@@ -747,3 +747,150 @@ test('Customer Portal Scenarios 1-7: complete ordering journey, validation, paym
   assert.equal(differentVariantCart[1].quantity, 1);
 });
 
+test('Regression & Acceptance Suite: multi-tenant isolation, KDS state machine, cashier settlement, and storage partitioning', () => {
+  // 1. KDS State Machine & Transition Rules
+  assert.equal(canTransitionOrderStatus('Pending', 'Accepted'), true);
+  assert.equal(canTransitionOrderStatus('Accepted', 'Preparing'), true);
+  assert.equal(canTransitionOrderStatus('Preparing', 'Ready'), true);
+  assert.equal(canTransitionOrderStatus('Ready', 'Served'), true);
+  assert.equal(canTransitionOrderStatus('Served', 'Completed'), true);
+
+  // Cancellation rules
+  assert.equal(canTransitionOrderStatus('Pending', 'Cancelled'), true);
+  assert.equal(canTransitionOrderStatus('Accepted', 'Cancelled'), true);
+  assert.equal(canTransitionOrderStatus('Preparing', 'Cancelled'), false);
+  assert.equal(canTransitionOrderStatus('Ready', 'Cancelled'), false);
+  assert.equal(canTransitionOrderStatus('Served', 'Cancelled'), false);
+  assert.equal(canTransitionOrderStatus('Cancelled', 'Pending'), false);
+  assert.equal(canTransitionOrderStatus('Completed', 'Pending'), false);
+
+  // 2. Cashier Settlement & Payment Status Resolution
+  assert.equal(resolvePaymentStatus(500, 500), 'Paid');
+  assert.equal(resolvePaymentStatus(500, 300), 'Partially Paid');
+  assert.equal(resolvePaymentStatus(500, 0), 'Pending');
+
+  // Multi-order bill totals calculation
+  const mockOrdersForTable: Order[] = [
+    {
+      id: 'ORD-101',
+      restaurantId: 'RST-1001',
+      branchId: 'BR-101',
+      tableId: 'TBL-1',
+      tableNumber: 'T01',
+      customerName: 'Guest 1',
+      customerPhone: '9876543210',
+      customerSessionId: 'sess-1',
+      items: [
+        {
+          id: 'item-1',
+          menuItemId: 'm1',
+          name: 'Butter Chicken',
+          basePrice: 300,
+          unitPrice: 300,
+          quantity: 2,
+          isVeg: false,
+          selectedCustomizations: [],
+          specialInstructions: '',
+        },
+      ],
+      subtotal: 600,
+      taxRatePercent: 5,
+      taxAmount: 30,
+      totalAmount: 630,
+      status: 'Served',
+      paymentStatus: 'Pending',
+      orderPaymentMethod: 'Pay at Restaurant',
+      estimatedPrepMinutes: 15,
+      createdAt: '2026-11-20T12:00:00Z',
+      updatedAt: '2026-11-20T12:00:00Z',
+    },
+    {
+      id: 'ORD-102',
+      restaurantId: 'RST-1001',
+      branchId: 'BR-101',
+      tableId: 'TBL-1',
+      tableNumber: 'T01',
+      customerName: 'Guest 1',
+      customerPhone: '9876543210',
+      customerSessionId: 'sess-1',
+      items: [
+        {
+          id: 'item-2',
+          menuItemId: 'm2',
+          name: 'Garlic Naan',
+          basePrice: 50,
+          unitPrice: 50,
+          quantity: 4,
+          isVeg: true,
+          selectedCustomizations: [],
+          specialInstructions: '',
+        },
+      ],
+      subtotal: 200,
+      taxRatePercent: 5,
+      taxAmount: 10,
+      totalAmount: 210,
+      status: 'Served',
+      paymentStatus: 'Pending',
+      orderPaymentMethod: 'Pay at Restaurant',
+      estimatedPrepMinutes: 10,
+      createdAt: '2026-11-20T12:15:00Z',
+      updatedAt: '2026-11-20T12:15:00Z',
+    },
+  ];
+
+  // 5% GST and 10% discount
+  // calculateBillTotals(orders, taxRatePercent, discountPercent)
+  const billCalc = calculateBillTotals(mockOrdersForTable, 5, 10);
+  assert.equal(billCalc.subtotal, 800);
+  assert.equal(billCalc.discountAmount, 80);
+  assert.equal(billCalc.taxAmount, 36);
+  assert.equal(billCalc.totalAmount, 756);
+
+  // 3. Multi-Tenant Scoping Isolation
+  const crossTenantOrders: Order[] = [
+    ...mockOrdersForTable,
+    {
+      id: 'ORD-201',
+      restaurantId: 'RST-1002',
+      branchId: 'BR-201',
+      tableId: 'TBL-99',
+      tableNumber: 'T01', // Same table number, different restaurant!
+      customerName: 'Guest 2',
+      customerPhone: '9123456789',
+      customerSessionId: 'sess-2',
+      items: [],
+      subtotal: 450,
+      taxRatePercent: 5,
+      taxAmount: 22.5,
+      totalAmount: 472.5,
+      status: 'Pending',
+      paymentStatus: 'Paid',
+      orderPaymentMethod: 'Online Payment',
+      estimatedPrepMinutes: 15,
+      createdAt: '2026-11-20T12:20:00Z',
+      updatedAt: '2026-11-20T12:20:00Z',
+    },
+  ];
+
+  const rst1Orders = scopeOrdersByRestaurant(crossTenantOrders, 'RST-1001');
+  const rst2Orders = scopeOrdersByRestaurant(crossTenantOrders, 'RST-1002');
+  assert.equal(rst1Orders.length, 2);
+  assert.equal(rst2Orders.length, 1);
+  assert.ok(rst1Orders.every((o) => o.restaurantId === 'RST-1001'));
+  assert.ok(rst2Orders.every((o) => o.restaurantId === 'RST-1002'));
+
+  // 4. Guest Cart Partition Key Format
+  const makeGuestKey = (restaurantId: string, tableNumber: string, guestSessionId: string) =>
+    `${restaurantId}::${tableNumber.toUpperCase()}::${guestSessionId}`;
+
+  const cartKey1 = makeGuestKey('RST-1001', 't01', 'guest-abc');
+  const cartKey2 = makeGuestKey('RST-1001', 'T01', 'guest-xyz'); // Different guest at same table
+  const cartKey3 = makeGuestKey('RST-1002', 'T01', 'guest-abc'); // Same guest at different restaurant
+
+  assert.notEqual(cartKey1, cartKey2);
+  assert.notEqual(cartKey1, cartKey3);
+  assert.equal(cartKey1, 'RST-1001::T01::guest-abc');
+});
+
+

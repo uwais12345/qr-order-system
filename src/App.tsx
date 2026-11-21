@@ -1,10 +1,29 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import { parseTableQrRoute } from './domain/serveqrLogic';
 import { ServeQRProvider } from './store/ServeQRStore';
 import { PortalLanding } from './views/PortalLanding';
-import { SuperAdminModule } from './views/super-admin/SuperAdminModule';
-import { RestaurantOwnerModule } from './views/restaurant/RestaurantOwnerModule';
-import { CustomerOrderApp } from './views/customer/CustomerOrderApp';
+
+const SuperAdminModule = React.lazy(() =>
+  import('./views/super-admin/SuperAdminModule').then((m) => ({ default: m.SuperAdminModule }))
+);
+const RestaurantOwnerModule = React.lazy(() =>
+  import('./views/restaurant/RestaurantOwnerModule').then((m) => ({ default: m.RestaurantOwnerModule }))
+);
+const CustomerOrderApp = React.lazy(() =>
+  import('./views/customer/CustomerOrderApp').then((m) => ({ default: m.CustomerOrderApp }))
+);
+
+const ModuleFallback: React.FC = () => (
+  <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 text-slate-100 p-6">
+    <div className="relative flex items-center justify-center mb-4">
+      <div className="w-12 h-12 rounded-full border-2 border-amber-500/20 border-t-amber-500 animate-spin" />
+      <span className="absolute text-xs font-bold text-amber-400">QR</span>
+    </div>
+    <p className="text-sm font-medium text-slate-400 tracking-wide animate-pulse">
+      Loading ServeQR Portal...
+    </p>
+  </div>
+);
 
 function getCurrentLocationState() {
   if (typeof window === 'undefined') {
@@ -37,23 +56,33 @@ const ServeQRRouter: React.FC = () => {
   if (qrRoute) {
     const params = new URLSearchParams(loc.search);
     return (
-      <CustomerOrderApp
-        restaurantSlug={qrRoute.restaurantSlug}
-        tableNumber={qrRoute.tableNumber}
-        branchId={qrRoute.branchId}
-        autoStart={params.get('autostart') === '1'}
-      />
+      <Suspense fallback={<ModuleFallback />}>
+        <CustomerOrderApp
+          restaurantSlug={qrRoute.restaurantSlug}
+          tableNumber={qrRoute.tableNumber}
+          branchId={qrRoute.branchId}
+          autoStart={params.get('autostart') === '1'}
+        />
+      </Suspense>
     );
   }
 
   // 2. Super Admin workspace routes: /super-admin*
   if (loc.pathname.startsWith('/super-admin')) {
-    return <SuperAdminModule onNavigate={navigate} />;
+    return (
+      <Suspense fallback={<ModuleFallback />}>
+        <SuperAdminModule onNavigate={navigate} />
+      </Suspense>
+    );
   }
 
   // 3. Restaurant Owner workspace routes: /restaurant*
   if (loc.pathname.startsWith('/restaurant')) {
-    return <RestaurantOwnerModule onNavigate={navigate} />;
+    return (
+      <Suspense fallback={<ModuleFallback />}>
+        <RestaurantOwnerModule onNavigate={navigate} />
+      </Suspense>
+    );
   }
 
   // 4. Default ServeQR Portal Entry
