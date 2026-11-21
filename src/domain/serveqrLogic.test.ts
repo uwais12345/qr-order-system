@@ -588,3 +588,162 @@ test('Category CRUD: creation, validation, atomic renaming with dish preservatio
   assert.match(selfReassignRes.error ?? '', /cannot be the same/);
 });
 
+test('Customer Portal Scenarios 1-7: complete ordering journey, validation, payment gating, and tracking', () => {
+  // Scenario 1: Scan/open valid restaurant QR -> Select food -> Add to cart -> Online Payment -> Order placed -> Tracking
+  const qrPath = buildTableQrPath('green-leaf-bistro', 'T01', 'BR-01');
+  const parsed = parseTableQrRoute('/menu/green-leaf-bistro', '?table=T01&branch=BR-01');
+  assert.equal(parsed?.restaurantSlug, 'green-leaf-bistro');
+  assert.equal(parsed?.tableNumber, 'T01');
+
+  const baseDish: MenuItem = {
+    id: 'DISH-1',
+    restaurantId: 'RST-1',
+    name: 'Paneer Tikka',
+    description: 'Charcoal grilled cottage cheese',
+    imageUrl: '',
+    price: 320,
+    category: 'Starters',
+    isVeg: true,
+    available: true,
+    prepTimeMinutes: 15,
+    customizations: [],
+  };
+
+  const initialCart = upsertCustomizedCartItem([], baseDish, {
+    selectedCustomizations: [],
+    specialInstructions: 'Make it spicy',
+    quantity: 2,
+  });
+  assert.equal(initialCart.length, 1);
+  assert.equal(initialCart[0].quantity, 2);
+
+  const totals = calculateOrderTotals(initialCart, 5, 3);
+  assert.equal(totals.subtotal, 640);
+  assert.equal(totals.taxAmount, 32);
+  assert.equal(totals.totalAmount, 672);
+
+  // Tracking step progression
+  assert.equal(getCustomerTrackingStepIndex('Pending'), 0);
+  assert.equal(getCustomerTrackingStepIndex('Accepted'), 1);
+  assert.equal(getCustomerTrackingStepIndex('Preparing'), 2);
+  assert.equal(getCustomerTrackingStepIndex('Ready'), 3);
+  assert.equal(getCustomerTrackingStepIndex('Served'), 4);
+
+  // Scenario 2: Pay at Restaurant allowed when enabled
+  const payAtRestMethods = getAvailableCustomerPaymentMethods(true);
+  assert.deepEqual(payAtRestMethods, ['Online Payment', 'Pay at Restaurant']);
+
+  // Scenario 3: Pay at Restaurant disabled in settings
+  const onlineOnlyMethods = getAvailableCustomerPaymentMethods(false);
+  assert.deepEqual(onlineOnlyMethods, ['Online Payment']);
+  assert.equal(onlineOnlyMethods.includes('Pay at Restaurant'), false);
+
+  // Scenario 4: Validation rejects empty name or invalid Indian mobile
+  const custSettings = {
+    guestOrderingEnabled: true,
+    customerNameRequirement: 'Mandatory' as const,
+    mobileNumberRequirement: 'Mandatory' as const,
+    otpVerificationEnabled: false,
+    waiterApprovalRequired: false,
+  };
+  const invalidNameErr = validateCustomerCheckout('', '9876543210', custSettings, false);
+  assert.ok(invalidNameErr.customerName);
+
+  const invalidPhoneErr = validateCustomerCheckout('Aarav', '12345', custSettings, false);
+  assert.ok(invalidPhoneErr.customerPhone);
+
+  const validCheckoutErr = validateCustomerCheckout('Aarav', '9876543210', custSettings, false);
+  assert.deepEqual(validCheckoutErr, {});
+
+  // Scenario 5: Restaurant with inactive/suspended subscription blocks new ordering
+  const now = new Date('2026-11-20T00:00:00Z');
+  const inactiveRestaurant = {
+    status: 'Active',
+    subscriptionStatus: 'INACTIVE',
+    subscriptionExpiryDate: '2027-01-01',
+  } as Restaurant;
+  assert.equal(isRestaurantOrderingAvailable(inactiveRestaurant, now), false);
+
+  const activeRestaurant = {
+    status: 'Active',
+    subscriptionStatus: 'ACTIVE',
+    subscriptionExpiryDate: '2027-01-01',
+  } as Restaurant;
+  assert.equal(isRestaurantOrderingAvailable(activeRestaurant, now), true);
+
+  // Scenario 6: Item with mandatory and optional customizations
+  const biryaniDish: MenuItem = {
+    id: 'DISH-2',
+    restaurantId: 'RST-1',
+    name: 'Hyderabadi Dum Biryani',
+    description: 'Fragrant basmati rice',
+    imageUrl: '',
+    price: 350,
+    category: 'Mains',
+    isVeg: true,
+    available: true,
+    prepTimeMinutes: 20,
+    customizations: [
+      {
+        id: 'portion',
+        name: 'Portion Size',
+        type: 'single',
+        required: true,
+        choices: [
+          { id: 'regular', label: 'Regular', priceDelta: 0 },
+          { id: 'large', label: 'Large (Serves 2)', priceDelta: 120 },
+        ],
+      },
+      {
+        id: 'addons',
+        name: 'Add-ons',
+        type: 'multiple',
+        required: false,
+        choices: [
+          { id: 'mirchi', label: 'Mirchi Ka Salan', priceDelta: 40 },
+          { id: 'raita', label: 'Extra Raita', priceDelta: 25 },
+        ],
+      },
+    ],
+  };
+
+  const selectedCustomizations = [
+    { groupId: 'portion', groupName: 'Portion Size', choiceId: 'large', choiceLabel: 'Large (Serves 2)', priceDelta: 120 },
+    { groupId: 'addons', groupName: 'Add-ons', choiceId: 'mirchi', choiceLabel: 'Mirchi Ka Salan', priceDelta: 40 },
+  ];
+
+  // Unit price = 350 + 120 + 40 = 510
+  const customUnitPrice = calculateCartItemUnitPrice(biryaniDish.price, selectedCustomizations);
+  assert.equal(customUnitPrice, 510);
+
+  const customizedCart = upsertCustomizedCartItem([], biryaniDish, {
+    selectedCustomizations,
+    specialInstructions: 'Spicy',
+    quantity: 1,
+  });
+  const customTotals = calculateOrderTotals(customizedCart, 5, 0);
+  assert.equal(customTotals.subtotal, 510);
+  assert.equal(customTotals.taxAmount, 25.5);
+  assert.equal(customTotals.totalAmount, 535.5);
+
+  // Scenario 7: Cart item hash uniqueness merges identical variants and separates different variants
+  const identicalCart = upsertCustomizedCartItem(customizedCart, biryaniDish, {
+    selectedCustomizations,
+    specialInstructions: 'Spicy',
+    quantity: 2,
+  });
+  assert.equal(identicalCart.length, 1);
+  assert.equal(identicalCart[0].quantity, 3); // 1 + 2 = 3
+
+  const differentVariantCart = upsertCustomizedCartItem(identicalCart, biryaniDish, {
+    selectedCustomizations: [
+      { groupId: 'portion', groupName: 'Portion Size', choiceId: 'regular', choiceLabel: 'Regular', priceDelta: 0 },
+    ],
+    specialInstructions: '',
+    quantity: 1,
+  });
+  assert.equal(differentVariantCart.length, 2);
+  assert.equal(differentVariantCart[0].quantity, 3);
+  assert.equal(differentVariantCart[1].quantity, 1);
+});
+

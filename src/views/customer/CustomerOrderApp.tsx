@@ -440,10 +440,10 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
           <div className="flex items-center gap-2 min-w-0">
             <RestaurantBrandAvatar restaurant={restaurant} size="sm" />
             <div className="min-w-0">
-              <p className="font-display text-[13px] sm:text-sm font-bold text-[#172B4D] truncate leading-tight">
+              <p className="font-display text-[13px] sm:text-sm font-bold text-[#172B4D] truncate max-w-[130px] xs:max-w-[180px] sm:max-w-none leading-tight">
                 {restaurant.name}
               </p>
-              <p className="text-[11px] text-slate-500 truncate leading-tight">
+              <p className="text-[11px] text-slate-500 truncate max-w-[130px] xs:max-w-[180px] sm:max-w-none leading-tight">
                 {branch?.name ?? restaurant.city}
               </p>
             </div>
@@ -456,7 +456,7 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('cart')}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer whitespace-nowrap"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] text-xs font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg cursor-pointer whitespace-nowrap"
             >
               <ShoppingBag className="w-3.5 h-3.5" />
               Cart ({pricing.itemCount})
@@ -481,7 +481,7 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder={`Search dishes at ${restaurant.name}...`}
                   aria-label="Search digital menu"
-                  className="w-full min-h-[42px] pl-10 pr-4 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#087F5B]/25 focus:border-[#087F5B]"
+                  className="w-full min-h-[44px] pl-10 pr-4 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#087F5B]/25 focus:border-[#087F5B]"
                 />
               </div>
 
@@ -504,7 +504,7 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
                             setSelectedCategory(cat);
                             setActiveTab('menu');
                           }}
-                          className={`min-h-[58px] p-3.5 rounded-xl border text-left transition-colors cursor-pointer ${
+                          className={`min-h-[60px] p-3.5 rounded-xl border text-left transition-colors cursor-pointer ${
                             selectedCategory === cat
                               ? 'border-[#087F5B] bg-emerald-50/50'
                               : 'border-slate-200 bg-white hover:border-slate-300'
@@ -521,15 +521,15 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
                 </section>
               ) : (
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
                     {['All', ...categories].map((cat) => (
                       <button
                         key={cat}
                         type="button"
                         onClick={() => setSelectedCategory(cat)}
-                        className={`min-h-[34px] px-3 text-xs font-semibold rounded-lg whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                        className={`min-h-[38px] px-3.5 text-xs font-semibold rounded-lg whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
                           selectedCategory === cat
-                            ? 'bg-[#172B4D] text-white'
+                            ? 'bg-[#172B4D] text-white shadow-xs'
                             : 'bg-white border border-slate-200 text-slate-700 hover:border-slate-300'
                         }`}
                       >
@@ -538,7 +538,7 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
                     ))}
                   </div>
 
-                  <div className="inline-flex p-0.5 bg-slate-200/70 rounded-lg self-start shrink-0">
+                  <div className="inline-flex p-1 bg-slate-200/70 rounded-lg self-start shrink-0">
                     {[
                       { id: 'all', label: 'All' },
                       { id: 'veg', label: 'Veg' },
@@ -548,7 +548,7 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
                         key={opt.id}
                         type="button"
                         onClick={() => setDietFilter(opt.id as 'all' | 'veg' | 'nonveg')}
-                        className={`px-2.5 py-1 text-xs font-semibold rounded-md cursor-pointer ${
+                        className={`min-h-[32px] px-3 py-1 text-xs font-semibold rounded-md cursor-pointer transition-colors ${
                           dietFilter === opt.id
                             ? 'bg-white text-[#172B4D] shadow-xs'
                             : 'text-slate-600'
@@ -635,7 +635,7 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
                                   type="button"
                                   onClick={() => openCustomizationSheet(item, null)}
                                   aria-label={`Customize ${item.name}`}
-                                  className="min-h-[32px] px-2.5 text-[11px] font-semibold text-[#172B4D] bg-slate-100 hover:bg-slate-200/80 rounded-lg inline-flex items-center gap-1 cursor-pointer whitespace-nowrap transition-colors"
+                                  className="min-h-[36px] px-3 text-[11px] font-semibold text-[#172B4D] bg-slate-100 hover:bg-slate-200/80 active:bg-slate-200 rounded-lg inline-flex items-center gap-1 cursor-pointer whitespace-nowrap transition-colors touch-manipulation"
                                 >
                                   <SlidersHorizontal className="w-3 h-3 text-[#087F5B]" />
                                   Options
@@ -661,19 +661,19 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
                             </button>
 
                             {item.available ? (
-                              <div className="-mt-3.5 relative z-10 w-[86px] sm:w-[92px]">
+                              <div className="-mt-3.5 relative z-10 w-[88px] sm:w-[94px]">
                                 {inCartQty === 0 ? (
                                   <button
                                     type="button"
                                     onClick={() => handlePrimaryAddClick(item)}
                                     aria-label={`Add ${item.name} to cart`}
-                                    className="w-full min-h-[34px] px-2.5 text-xs font-bold text-white bg-[#087F5B] hover:bg-[#06674A] active:scale-[0.98] rounded-lg ring-2 ring-white shadow-sm cursor-pointer whitespace-nowrap transition-all"
+                                    className="w-full min-h-[36px] px-2.5 text-xs font-bold text-white bg-[#087F5B] hover:bg-[#06674A] active:scale-[0.98] rounded-lg ring-2 ring-white shadow-sm cursor-pointer whitespace-nowrap transition-all touch-manipulation flex items-center justify-center"
                                   >
                                     + Add
                                   </button>
                                 ) : (
                                   <div
-                                    className="w-full inline-flex items-center justify-between bg-[#087F5B] text-white rounded-lg ring-2 ring-white shadow-sm overflow-hidden min-h-[34px]"
+                                    className="w-full inline-flex items-center justify-between bg-[#087F5B] text-white rounded-lg ring-2 ring-white shadow-sm overflow-hidden min-h-[36px] touch-manipulation"
                                     role="group"
                                     aria-label={`Quantity controls for ${item.name}`}
                                   >
@@ -681,7 +681,7 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
                                       type="button"
                                       onClick={() => handleMenuCardDecrement(item)}
                                       aria-label={`Decrease ${item.name} quantity`}
-                                      className="min-h-[34px] w-7 flex items-center justify-center hover:bg-[#06674A] cursor-pointer"
+                                      className="min-h-[36px] w-7 sm:w-8 flex items-center justify-center hover:bg-[#06674A] cursor-pointer"
                                     >
                                       <Minus className="w-3.5 h-3.5" />
                                     </button>
@@ -695,7 +695,7 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
                                       type="button"
                                       onClick={() => handleMenuCardIncrement(item)}
                                       aria-label={`Increase ${item.name} quantity`}
-                                      className="min-h-[34px] w-7 flex items-center justify-center hover:bg-[#06674A] cursor-pointer"
+                                      className="min-h-[36px] w-7 sm:w-8 flex items-center justify-center hover:bg-[#06674A] cursor-pointer"
                                     >
                                       <Plus className="w-3.5 h-3.5" />
                                     </button>
@@ -801,7 +801,7 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => openCustomizationSheet(fullMenuItem, ci)}
-                                  className="font-semibold text-[#087F5B] hover:text-[#06674A] cursor-pointer whitespace-nowrap"
+                                  className="min-h-[36px] inline-flex items-center font-semibold text-[#087F5B] hover:text-[#06674A] cursor-pointer whitespace-nowrap"
                                 >
                                   {hasConfiguredCustomizations(fullMenuItem)
                                     ? 'Edit options'
@@ -812,19 +812,19 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
                                 type="button"
                                 onClick={() => handleRemoveCartItem(ci.cartItemId)}
                                 aria-label={`Remove ${ci.name}`}
-                                className="text-red-600 inline-flex items-center gap-0.5 cursor-pointer whitespace-nowrap"
+                                className="min-h-[36px] inline-flex items-center gap-1 text-red-600 hover:text-red-700 cursor-pointer whitespace-nowrap"
                               >
-                                <Trash2 className="w-3 h-3" />
+                                <Trash2 className="w-3.5 h-3.5" />
                                 Remove
                               </button>
                             </div>
 
-                            <div className="inline-flex items-center border border-[#087F5B] rounded-lg overflow-hidden shrink-0">
+                            <div className="inline-flex items-center border border-[#087F5B] rounded-lg overflow-hidden shrink-0 touch-manipulation">
                               <button
                                 type="button"
                                 onClick={() => handleUpdateQty(ci.cartItemId, -1)}
                                 aria-label={`Decrease quantity of ${ci.name}`}
-                                className="min-h-[32px] min-w-[32px] flex items-center justify-center text-[#087F5B] hover:bg-emerald-50 cursor-pointer"
+                                className="min-h-[36px] min-w-[36px] flex items-center justify-center text-[#087F5B] hover:bg-emerald-50 active:bg-emerald-100 cursor-pointer"
                               >
                                 <Minus className="w-3.5 h-3.5" />
                               </button>
@@ -835,7 +835,7 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
                                 type="button"
                                 onClick={() => handleUpdateQty(ci.cartItemId, 1)}
                                 aria-label={`Increase quantity of ${ci.name}`}
-                                className="min-h-[32px] min-w-[32px] flex items-center justify-center text-[#087F5B] hover:bg-emerald-50 cursor-pointer"
+                                className="min-h-[36px] min-w-[36px] flex items-center justify-center text-[#087F5B] hover:bg-emerald-50 active:bg-emerald-100 cursor-pointer"
                               >
                                 <Plus className="w-3.5 h-3.5" />
                               </button>
@@ -901,6 +901,7 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
                     <input
                       id="guest-name"
                       type="text"
+                      autoComplete="name"
                       required
                       value={customerName}
                       onChange={(e) => {
@@ -914,7 +915,7 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
                         }
                       }}
                       placeholder="Enter your full name"
-                      className={`w-full min-h-[42px] px-3.5 text-sm border rounded-xl ${
+                      className={`w-full min-h-[44px] px-3.5 text-sm border rounded-xl ${
                         checkoutErrors.customerName ? 'border-red-400 bg-red-50/30' : 'border-slate-300'
                       }`}
                     />
@@ -937,6 +938,7 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
                         id="guest-phone"
                         type="tel"
                         inputMode="numeric"
+                        autoComplete="tel"
                         maxLength={14}
                         required
                         value={customerPhone}
@@ -952,7 +954,7 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
                           }
                         }}
                         placeholder="10-digit mobile (e.g. 9876543210)"
-                        className={`flex-1 min-h-[42px] px-3.5 text-sm font-mono border rounded-xl ${
+                        className={`flex-1 min-h-[44px] px-3.5 text-sm font-mono border rounded-xl ${
                           checkoutErrors.customerPhone
                             ? 'border-red-400 bg-red-50/30'
                             : 'border-slate-300'
@@ -962,7 +964,7 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
                         <button
                           type="button"
                           onClick={handleSendOtp}
-                          className="px-3 text-xs font-semibold text-[#087F5B] border border-[#087F5B] rounded-xl cursor-pointer whitespace-nowrap"
+                          className="px-3 min-h-[44px] text-xs font-semibold text-[#087F5B] border border-[#087F5B] rounded-xl cursor-pointer whitespace-nowrap"
                         >
                           {otpSent ? 'Resend OTP' : 'Send OTP'}
                         </button>
@@ -1248,7 +1250,7 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
 
       {/* C. STICKY BOTTOM CART SUMMARY BAR (SWIGGY-STYLE) */}
       {showStickyCartBar && (
-        <div className="fixed bottom-[56px] left-0 right-0 z-35 px-3 pb-2 pointer-events-none">
+        <div className="fixed bottom-[calc(56px+env(safe-area-inset-bottom,0px))] left-0 right-0 z-35 px-3 pb-2 pointer-events-none">
           <div className="max-w-5xl mx-auto pointer-events-auto">
             <button
               type="button"
@@ -1256,7 +1258,7 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
               aria-label={`View Cart, ${pricing.itemCount} ${
                 pricing.itemCount === 1 ? 'Item' : 'Items'
               }, ${formatCurrency(pricing.totalAmount, cur)}`}
-              className="w-full min-h-[46px] px-3.5 sm:px-4 py-2 bg-[#087F5B] hover:bg-[#06674A] text-white rounded-xl shadow-lg flex items-center justify-between gap-2 cursor-pointer transition-colors"
+              className="w-full min-h-[48px] px-3.5 sm:px-4 py-2.5 bg-[#087F5B] hover:bg-[#06674A] active:scale-[0.99] text-white rounded-xl shadow-lg flex items-center justify-between gap-2 cursor-pointer transition-all"
             >
               <span className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold min-w-0">
                 <ShoppingBag className="w-4 h-4 shrink-0" />
@@ -1279,7 +1281,7 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
       {/* Customer Mobile-First Bottom Navigation (NO Admin / Owner links) */}
       <nav
         aria-label="Customer Navigation"
-        className="fixed bottom-0 left-0 right-0 z-40 h-14 bg-white/95 backdrop-blur-md border-t border-slate-200"
+        className="fixed bottom-0 left-0 right-0 z-40 h-[56px] pb-[env(safe-area-inset-bottom,0px)] bg-white/95 backdrop-blur-md border-t border-slate-200"
       >
         <div className="max-w-5xl mx-auto h-full grid grid-cols-5">
           {[
@@ -1309,7 +1311,7 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
                     window.setTimeout(() => searchInputRef.current?.focus(), 60);
                   }
                 }}
-                className={`flex flex-col items-center justify-center gap-0.5 text-[10px] sm:text-[11px] font-semibold transition-colors cursor-pointer ${
+                className={`flex flex-col items-center justify-center gap-0.5 min-h-[44px] text-[10px] sm:text-[11px] font-semibold transition-colors cursor-pointer ${
                   active ? 'text-[#087F5B]' : 'text-slate-500 hover:text-[#172B4D]'
                 }`}
               >

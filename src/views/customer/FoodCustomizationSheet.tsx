@@ -147,7 +147,7 @@ export const FoodCustomizationSheet: React.FC<FoodCustomizationSheetProps> = ({
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 32, opacity: 0 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-2xl border-t sm:border border-slate-200 shadow-2xl overflow-hidden max-h-[88dvh] flex flex-col"
+          className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-2xl border-t sm:border border-slate-200 shadow-2xl overflow-hidden max-h-[90dvh] flex flex-col"
         >
           {/* Mobile grab handle */}
           <div className="sm:hidden pt-2.5 pb-1 flex justify-center shrink-0">
@@ -357,7 +357,7 @@ export const FoodCustomizationSheet: React.FC<FoodCustomizationSheetProps> = ({
           </div>
 
           {/* Fixed Bottom Action Bar (Quantity + Dynamic Total Add to Cart) */}
-          <div className="px-4 sm:px-5 py-3 bg-white border-t border-slate-200 flex items-center gap-2.5 shrink-0">
+          <div className="px-4 sm:px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-white border-t border-slate-200 flex items-center gap-2.5 shrink-0">
             <div
               className="inline-flex items-center border border-slate-300 bg-slate-50 rounded-xl overflow-hidden shrink-0"
               role="group"

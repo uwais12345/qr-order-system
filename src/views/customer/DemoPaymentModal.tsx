@@ -59,9 +59,9 @@ export const DemoPaymentModal: React.FC<DemoPaymentModalProps> = ({
       aria-modal="true"
       aria-labelledby="demo-pay-title"
     >
-      <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-2xl border border-slate-200 overflow-hidden shadow-xl">
+      <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-2xl border border-slate-200 overflow-hidden shadow-2xl max-h-[90dvh] flex flex-col">
         {/* Header */}
-        <div className="bg-[#172B4D] text-white px-5 py-4 flex items-center justify-between gap-3">
+        <div className="bg-[#172B4D] text-white px-5 py-4 flex items-center justify-between gap-3 shrink-0">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-300">
               Online Payment Demo · Prototype Mode
@@ -74,13 +74,13 @@ export const DemoPaymentModal: React.FC<DemoPaymentModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Close payment modal"
-            className="p-1.5 text-slate-300 hover:text-white rounded-lg cursor-pointer"
+            className="p-2 text-slate-300 hover:text-white rounded-lg cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center -mr-1"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="p-4 sm:p-5 space-y-4 overflow-y-auto flex-1">
           {/* Amount & Guest Info */}
           <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
             <div>
@@ -167,7 +167,7 @@ export const DemoPaymentModal: React.FC<DemoPaymentModalProps> = ({
               type="button"
               disabled={status === 'processing'}
               onClick={handleSimulateFailure}
-              className="w-full min-h-[42px] px-4 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 disabled:opacity-60 rounded-xl cursor-pointer transition-colors"
+              className="w-full min-h-[44px] px-4 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 disabled:opacity-60 rounded-xl cursor-pointer transition-colors"
             >
               Simulate Payment Failure
             </button>
