@@ -1,0 +1,8 @@
+{
+  "name": "ServeQR",
+  "description": "QR-based multi-restaurant dine-in ordering, kitchen display, billing, and multi-tenant restaurant management platform.,like table flow with Qr codes and real-time order status updates for both customers and staff.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
