@@ -37,8 +37,8 @@ export class NotFoundError extends AppError {
 }
 
 export class ConflictError extends AppError {
-  constructor(message = 'Resource conflict or duplicate entry') {
-    super(message, 409);
+  constructor(message = 'Resource conflict or duplicate entry', details?: unknown) {
+    super(message, 409, details);
   }
 }
 

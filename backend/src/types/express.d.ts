@@ -36,11 +36,31 @@ export interface TenantContext {
   isSubscriptionActive: boolean;
 }
 
+export interface GuestSessionContext {
+  id: string;
+  qrTokenId: string;
+  diningTableId: string;
+  tableCode: string;
+  tableDisplayName: string;
+  branchId: string;
+  branchName: string;
+  restaurantId: string;
+  restaurantName: string;
+  restaurantSlug: string;
+  restaurantLogoUrl: string | null;
+  payAtRestaurantEnabled: boolean;
+  customerName: string | null;
+  customerPhone: string | null;
+  isOperational: boolean;
+  expiresAt: Date;
+}
+
 declare global {
   namespace Express {
     interface Request {
       user?: AuthUser;
       tenantContext?: TenantContext;
+      guestSession?: GuestSessionContext;
     }
   }
 }

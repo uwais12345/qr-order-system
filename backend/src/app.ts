@@ -7,6 +7,17 @@ import { prisma } from './config/prisma.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { NotFoundError } from './utils/errors.js';
 import authRoutes from './modules/auth/auth.routes.js';
+import superAdminRoutes from './modules/super-admin/superAdmin.routes.js';
+import restaurantRoutes from './modules/restaurant/restaurant.routes.js';
+import tableRoutes from './modules/table/table.routes.js';
+import menuRoutes from './modules/menu/menu.routes.js';
+import orderRoutes from './modules/order/order.routes.js';
+import guestRoutes from './modules/guest/guest.routes.js';
+import {
+  guestPaymentRouter,
+  restaurantPaymentRouter,
+  webhookPaymentRouter,
+} from './modules/payment/payment.routes.js';
 
 export function createApp() {
   const app = express();
@@ -22,7 +33,10 @@ export function createApp() {
     })
   );
 
-  // 2. Body Parser
+  // 2. Payment Webhooks (must receive exact raw Buffer body BEFORE express.json)
+  app.use(`${env.API_PREFIX}/webhooks`, webhookPaymentRouter);
+
+  // 3. Body Parser
   app.use(express.json());
 
   // 3. Rate limiting for sensitive authentication endpoints
@@ -61,6 +75,14 @@ export function createApp() {
 
   // 5. Mount API Routes
   app.use(`${env.API_PREFIX}/auth`, authLimiter, authRoutes);
+  app.use(`${env.API_PREFIX}/super-admin`, superAdminRoutes);
+  app.use(`${env.API_PREFIX}/restaurants/:restaurantId/tables`, tableRoutes);
+  app.use(`${env.API_PREFIX}/restaurants/:restaurantId/menu`, menuRoutes);
+  app.use(`${env.API_PREFIX}/restaurants/:restaurantId/orders`, orderRoutes);
+  app.use(`${env.API_PREFIX}/restaurants/:restaurantId/payments`, restaurantPaymentRouter);
+  app.use(`${env.API_PREFIX}/restaurants/:restaurantId`, restaurantRoutes);
+  app.use(`${env.API_PREFIX}/guest/payments`, guestPaymentRouter);
+  app.use(`${env.API_PREFIX}/guest`, guestRoutes);
 
   // 6. Catch-all for unmatched routes
   app.use((req, _res, next) => {

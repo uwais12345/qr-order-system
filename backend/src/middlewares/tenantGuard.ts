@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { RestaurantRole, SubscriptionStatus } from '@prisma/client';
+import { RestaurantRole, RestaurantStatus, SubscriptionStatus } from '@prisma/client';
 import { prisma } from '../config/prisma.js';
 import { ForbiddenError, NotFoundError, SubscriptionInactiveError, UnauthorizedError } from '../utils/errors.js';
+import { canRestaurantReceiveOrders, isSubscriptionCurrentlyActive } from '../utils/subscription.js';
 
 interface RequireTenantOptions {
   allowedRoles?: RestaurantRole[];
@@ -49,7 +50,11 @@ export function requireTenant(options: RequireTenantOptions = {}) {
       }
 
       const activeSub = restaurant.subscriptions[0];
-      const isSubscriptionActive = activeSub?.status === SubscriptionStatus.ACTIVE;
+      const isSubscriptionActive = isSubscriptionCurrentlyActive(activeSub);
+      const isOperational = canRestaurantReceiveOrders(
+        restaurant.status as RestaurantStatus,
+        activeSub
+      );
 
       const branchId =
         req.params?.branchId ||
@@ -86,10 +91,10 @@ export function requireTenant(options: RequireTenantOptions = {}) {
         );
       }
 
-      // 6. Subscription enforcement (BR-04: Block operational actions if subscription is inactive)
-      if (enforceActiveSubscription && !isSubscriptionActive) {
+      // 6. Subscription & Restaurant status enforcement (BR-04: Block operational actions if inactive)
+      if (enforceActiveSubscription && !isOperational) {
         throw new SubscriptionInactiveError(
-          `Restaurant subscription is currently ${activeSub?.status || 'INACTIVE'}. This action cannot be performed.`
+          `Restaurant is ${restaurant.status} with subscription ${activeSub?.status || 'INACTIVE'}. This action cannot be performed.`
         );
       }
 
