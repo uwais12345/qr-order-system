@@ -17,6 +17,27 @@ Modular monolith backend for **ServeQR (QR-based Restaurant Ordering & Managemen
 - Tenant isolation guard (`requireTenant`) & platform role guard (`requirePlatformRole`) enforcing multi-tenant boundaries and subscription status checks ([src/middlewares/tenantGuard.ts](./src/middlewares/tenantGuard.ts), [src/middlewares/roleGuard.ts](./src/middlewares/roleGuard.ts)).
 - Auth module & rate-limited endpoints mounted at `/api/v1/auth` (`/login`, `/refresh`, `/me`, `/logout`) plus `/health` probe.
 
+### Phase 3: Super Admin, Restaurant Management, Tables/QR & Menu Catalog
+- **Super Admin** (`/api/v1/super-admin`): Platform dashboard metrics, atomic restaurant onboarding (Tenant, Restaurant, Branch, Owner, Subscription, default GST TaxRules, AuditLog), subscription plan catalog, and audit log feed ([src/modules/super-admin/](./src/modules/super-admin/)).
+- **Restaurant, Branches & Staff** (`/api/v1/restaurants/:restaurantId`): Profile/branding updates, `payAtRestaurantEnabled` toggle, multi-branch CRUD enforcing plan limits, and Kitchen/Owner staff management ([src/modules/restaurant/](./src/modules/restaurant/)).
+- **Dining Tables & Secure QR Tokens** (`/api/v1/restaurants/:restaurantId/tables`): Branch-scoped table CRUD with HMAC-SHA256 hashed QR tokens, one-time raw token issuance, instant token rotation, and revocation ([src/modules/table/](./src/modules/table/), [src/utils/token.ts](./src/utils/token.ts)).
+- **Menu Catalog & Tax Rules** (`/api/v1/restaurants/:restaurantId/menu`): Category CRUD with atomic reordering & item reassignment on delete, menu items, Kitchen/Owner availability toggles, modifier groups, and tax rules ([src/modules/menu/](./src/modules/menu/)).
+
+### Phase 4: Customer QR Resolution, Guest Session, Cart & Atomic Checkout
+- **Guest Capability Auth & QR Resolution** (`/api/v1/guest/sessions`, `/api/v1/guest/menu`): Validates QR token hashes, rejects revoked/expired QR codes or inactive subscriptions, issues unguessable guest session tokens, and serves branded branch menus ([src/middlewares/guestAuth.ts](./src/middlewares/guestAuth.ts), [src/modules/guest/guestSession.service.ts](./src/modules/guest/guestSession.service.ts)).
+- **Server-Side Cart & Decimal Pricing** (`/api/v1/guest/cart`): `decimal.js` financial calculator, modifier group rule validation, variant merging, live price-change & availability warnings ([src/utils/pricing.ts](./src/utils/pricing.ts), [src/modules/guest/cart.service.ts](./src/modules/guest/cart.service.ts)).
+- **Atomic Checkout & Order Tracking** (`/api/v1/guest/orders`): `Serializable` transaction with retry handling, Indian mobile validation, `PAY_AT_RESTAURANT` gating, idempotent retries via `idempotencyKey`, immutable `OrderItem`/`OrderItemModifier`/`OrderTaxLine` snapshots, fresh active cart creation for "Order more food", and guest-session-scoped order tracking ([src/modules/guest/checkout.service.ts](./src/modules/guest/checkout.service.ts)).
+
+### Phase 5: Socket.IO Real-Time Gateway & Kitchen Display System (KDS)
+- **Strict Order State Machine** ([src/utils/orderStateMachine.ts](./src/utils/orderStateMachine.ts)): Enforces `PENDING → ACCEPTED → PREPARING → READY → SERVED`, `REJECTED` (with reason), and owner-only `CANCELLED` (with reason).
+- **Authenticated Socket.IO Gateway** ([src/realtime/](./src/realtime/)): Handshake authentication for Staff JWTs and Guest tokens, server-controlled rooms (`restaurant:<id>:kitchen`, `restaurant:<id>:admin`, `branch:<id>:kitchen`, `guest-session:<id>`, `order:<id>`), and versioned `1.0` event envelopes (`order:created`, `order:status_updated`, `order:estimate_updated`).
+- **KDS & Staff Orders API** (`/api/v1/restaurants/:restaurantId/orders`): Live KDS queue filtering (`activeOnly=true`), status progression with `OrderStatusHistory`, and prep-time estimate updates ([src/modules/order/](./src/modules/order/)).
+
+### Phase 6: Razorpay Payments, Idempotent Webhooks & Cashier Settlement
+- **Payment Provider Adapter** ([src/modules/payment/paymentProvider.ts](./src/modules/payment/paymentProvider.ts)): `PaymentGatewayAdapter` with `RazorpayGatewayAdapter` and timing-safe HMAC-SHA256 verification.
+- **Online Checkout & Raw Webhooks**: `/api/v1/guest/payments` (`create-order`, signature-verified `verify`), and `/api/v1/webhooks/razorpay` mounted with `express.raw` before `express.json` for raw-body signature verification, event deduplication (`PaymentWebhookEvent`), amount checks, and `payment:updated` broadcasts ([src/modules/payment/](./src/modules/payment/)).
+- **Cashier Settlement & Verified Revenue** (`/api/v1/restaurants/:restaurantId/payments`): Owner-only offline counter settlement (`settle-offline`) and verified revenue reporting counting strictly `SUCCEEDED` payments (`summary`).
+
 ## Local Setup
 
 ```bash

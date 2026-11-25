@@ -1,12 +1,8 @@
 import { PrismaClient, PlatformRole, RestaurantRole, SubscriptionStatus, TableStatus, ItemAvailability, TaxCalculationType } from '@prisma/client';
 import argon2 from 'argon2';
-import crypto from 'crypto';
+import { hashQrToken } from '../src/utils/token.js';
 
 const prisma = new PrismaClient();
-
-function sha256(val: string): string {
-  return crypto.createHash('sha256').update(val).digest('hex');
-}
 
 async function main() {
   console.log('🌱 Starting ServeQR database seeding...');
@@ -183,7 +179,7 @@ async function main() {
     await prisma.qRToken.create({
       data: {
         diningTableId: table.id,
-        tokenHash: sha256(rawQrSecret),
+        tokenHash: hashQrToken(rawQrSecret),
         status: 'ACTIVE',
       },
     });
