@@ -11,6 +11,7 @@ import {
   Menu,
   QrCode,
   Receipt,
+  RefreshCw,
   Settings,
   UtensilsCrossed,
   X,
@@ -40,11 +41,19 @@ interface RestaurantLayoutProps {
   restaurant: Restaurant;
   activeSection: RestaurantSection;
   pendingOrdersCount: number;
+  staffRole?: 'OWNER' | 'KITCHEN';
+  backendMode?: boolean;
+  backendSyncing?: boolean;
+  backendError?: string | null;
+  onRefresh?: () => void;
+  onDismissError?: () => void;
   onSelectSection: (section: RestaurantSection) => void;
   onLogout: () => void;
   onGoHome: () => void;
   children: React.ReactNode;
 }
+
+const KITCHEN_ALLOWED_SECTIONS: RestaurantSection[] = ['kds', 'orders', 'menu'];
 
 const OWNER_NAV: Array<{
   id: RestaurantSection;
@@ -67,6 +76,12 @@ export const RestaurantLayout: React.FC<RestaurantLayoutProps> = ({
   restaurant,
   activeSection,
   pendingOrdersCount,
+  staffRole = 'OWNER',
+  backendMode = false,
+  backendSyncing = false,
+  backendError = null,
+  onRefresh,
+  onDismissError,
   onSelectSection,
   onLogout,
   onGoHome,
@@ -74,8 +89,15 @@ export const RestaurantLayout: React.FC<RestaurantLayoutProps> = ({
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const visibleNav =
+    staffRole === 'KITCHEN'
+      ? OWNER_NAV.filter((n) => KITCHEN_ALLOWED_SECTIONS.includes(n.id))
+      : OWNER_NAV;
+
   const activeNavLabel =
-    OWNER_NAV.find((n) => n.id === activeSection)?.label ?? 'Dashboard';
+    visibleNav.find((n) => n.id === activeSection)?.label ??
+    OWNER_NAV.find((n) => n.id === activeSection)?.label ??
+    'Dashboard';
 
   const validity = computeSubscriptionValidity(
     restaurant.subscriptionStatus,
@@ -116,7 +138,7 @@ export const RestaurantLayout: React.FC<RestaurantLayoutProps> = ({
       </div>
 
       <nav aria-label="Restaurant Owner Sidebar" className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {OWNER_NAV.map((item) => {
+        {visibleNav.map((item) => {
           const Icon = item.icon;
           const active = activeSection === item.id;
           return (
@@ -211,14 +233,28 @@ export const RestaurantLayout: React.FC<RestaurantLayoutProps> = ({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => onSelectSection('subscription')}
-              className="hidden md:inline-flex items-center gap-1.5 cursor-pointer"
-              aria-label="View subscription plan status"
-            >
-              <StatusLabel status={validity.effectiveStatus} badge />
-            </button>
+            {backendMode && onRefresh && (
+              <button
+                type="button"
+                onClick={onRefresh}
+                disabled={backendSyncing}
+                aria-label="Sync workspace data with server"
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-2 min-h-[40px] text-xs font-semibold text-[#172B4D] bg-slate-100 hover:bg-slate-200 disabled:opacity-60 rounded-lg transition-colors whitespace-nowrap cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-[#087F5B] ${backendSyncing ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">{backendSyncing ? 'Syncing...' : 'Sync'}</span>
+              </button>
+            )}
+            {staffRole !== 'KITCHEN' && (
+              <button
+                type="button"
+                onClick={() => onSelectSection('subscription')}
+                className="hidden md:inline-flex items-center gap-1.5 cursor-pointer"
+                aria-label="View subscription plan status"
+              >
+                <StatusLabel status={validity.effectiveStatus} badge />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => onSelectSection('kds')}
@@ -227,16 +263,51 @@ export const RestaurantLayout: React.FC<RestaurantLayoutProps> = ({
               <ChefHat className="w-4 h-4 text-[#087F5B]" />
               Kitchen Display
             </button>
-            <button
-              type="button"
-              onClick={() => onSelectSection('qr')}
-              className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 min-h-[40px] text-xs font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg transition-colors whitespace-nowrap cursor-pointer"
-            >
-              <QrCode className="w-4 h-4" />
-              Table QRs
-            </button>
+            {staffRole !== 'KITCHEN' && (
+              <button
+                type="button"
+                onClick={() => onSelectSection('qr')}
+                className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 min-h-[40px] text-xs font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg transition-colors whitespace-nowrap cursor-pointer"
+              >
+                <QrCode className="w-4 h-4" />
+                Table QRs
+              </button>
+            )}
           </div>
         </header>
+
+        {backendMode && backendError && (
+          <div
+            role="alert"
+            className="bg-amber-50 border-b border-amber-200 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 text-xs text-amber-950 no-print"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span className="truncate font-medium">Server sync error: {backendError}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {onRefresh && (
+                <button
+                  type="button"
+                  onClick={onRefresh}
+                  className="font-bold text-amber-800 hover:text-amber-950 underline cursor-pointer"
+                >
+                  Retry
+                </button>
+              )}
+              {onDismissError && (
+                <button
+                  type="button"
+                  onClick={onDismissError}
+                  aria-label="Dismiss server error"
+                  className="p-1 text-amber-700 hover:text-amber-950 cursor-pointer rounded"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Inactive Subscription Banner — Restaurant Admin retains full dashboard/reports/orders visibility while new QR orders are paused */}
         {!orderingActive && (

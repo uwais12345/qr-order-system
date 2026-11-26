@@ -28,10 +28,17 @@ export const RestaurantOwnerModule: React.FC<RestaurantOwnerModuleProps> = ({
   const {
     state,
     auth,
+    backendMode,
+    backendSyncing,
+    backendError,
+    refreshFromBackend,
+    clearBackendError,
     logoutRestaurantOwner,
     completeOwnerFirstLoginPasswordChange,
   } = useServeQR();
-  const [section, setSection] = useState<RestaurantSection>('dashboard');
+  const [section, setSection] = useState<RestaurantSection>(() =>
+    auth.staffRole === 'KITCHEN' ? 'kds' : 'dashboard'
+  );
 
   // Mandatory first-login password setup state
   const [newPassword, setNewPassword] = useState('');
@@ -169,11 +176,21 @@ export const RestaurantOwnerModule: React.FC<RestaurantOwnerModuleProps> = ({
       o.status === 'Ready'
   ).length;
 
+  const isKitchenStaff = auth.staffRole === 'KITCHEN';
+  const effectiveSection: RestaurantSection =
+    isKitchenStaff && !['kds', 'orders', 'menu'].includes(section) ? 'kds' : section;
+
   return (
     <RestaurantLayout
       restaurant={restaurant}
-      activeSection={section}
+      activeSection={effectiveSection}
       pendingOrdersCount={pendingCount}
+      staffRole={auth.staffRole}
+      backendMode={backendMode}
+      backendSyncing={backendSyncing}
+      backendError={backendError}
+      onRefresh={() => void refreshFromBackend()}
+      onDismissError={clearBackendError}
       onSelectSection={setSection}
       onLogout={() => {
         logoutRestaurantOwner();
@@ -181,29 +198,29 @@ export const RestaurantOwnerModule: React.FC<RestaurantOwnerModuleProps> = ({
       }}
       onGoHome={() => onNavigate('/')}
     >
-      {section === 'dashboard' && (
+      {effectiveSection === 'dashboard' && (
         <RestaurantDashboard restaurant={restaurant} onNavigateSection={setSection} />
       )}
-      {section === 'menu' && <MenuManagementView restaurant={restaurant} />}
-      {section === 'tables' && (
+      {effectiveSection === 'menu' && <MenuManagementView restaurant={restaurant} />}
+      {effectiveSection === 'tables' && (
         <TableManagementView
           restaurant={restaurant}
           onOpenQrManagement={() => setSection('qr')}
         />
       )}
-      {section === 'qr' && (
+      {effectiveSection === 'qr' && (
         <QrManagementView
           restaurant={restaurant}
           onTestQrRoute={(path) => onNavigate(path)}
           onGoToTables={() => setSection('tables')}
         />
       )}
-      {section === 'orders' && <OrdersView restaurant={restaurant} />}
-      {section === 'kds' && <KitchenDisplayView restaurant={restaurant} />}
-      {section === 'billing' && <BillingCashierView restaurant={restaurant} />}
-      {section === 'reports' && <RestaurantReportsView restaurant={restaurant} />}
-      {section === 'subscription' && <RestaurantSubscriptionView restaurant={restaurant} />}
-      {section === 'settings' && <RestaurantSettingsView restaurant={restaurant} />}
+      {effectiveSection === 'orders' && <OrdersView restaurant={restaurant} />}
+      {effectiveSection === 'kds' && <KitchenDisplayView restaurant={restaurant} />}
+      {effectiveSection === 'billing' && <BillingCashierView restaurant={restaurant} />}
+      {effectiveSection === 'reports' && <RestaurantReportsView restaurant={restaurant} />}
+      {effectiveSection === 'subscription' && <RestaurantSubscriptionView restaurant={restaurant} />}
+      {effectiveSection === 'settings' && <RestaurantSettingsView restaurant={restaurant} />}
     </RestaurantLayout>
   );
 };

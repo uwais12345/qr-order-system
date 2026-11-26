@@ -38,6 +38,10 @@ import type {
   SelectedCustomization,
 } from '../../domain/types';
 import { useServeQR } from '../../store/ServeQRStore';
+import { serveqrApi, tokenStore } from '../../services/apiClient';
+import { mapBackendMenuToUi, mapBackendOrderToUi } from '../../services/mappers';
+import { openRazorpayCheckout } from '../../services/razorpayCheckout';
+import { serveqrSocket } from '../../services/socketClient';
 import { FoodImage } from '../../components/FoodImage';
 import { RestaurantBrandAvatar } from '../../components/RestaurantBrandAvatar';
 import { ServeQRLogo } from '../../components/ServeQRLogo';
@@ -49,6 +53,7 @@ interface CustomerOrderAppProps {
   restaurantSlug: string;
   tableNumber: string;
   branchId?: string;
+  qrToken?: string;
   autoStart?: boolean;
 }
 
@@ -66,9 +71,76 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
   restaurantSlug,
   tableNumber,
   branchId,
+  qrToken,
   autoStart = false,
 }) => {
-  const { state, guestSessionId, getGuestCart, setGuestCart, placeCustomerOrder } = useServeQR();
+  const { state, backendMode, guestSessionId, getGuestCart, setGuestCart, placeCustomerOrder } =
+    useServeQR();
+
+  const [liveBackendOrders, setLiveBackendOrders] = useState<Order[] | null>(null);
+  const [liveBackendMenu, setLiveBackendMenu] = useState<{
+    categories: string[];
+    menuItems: MenuItem[];
+  } | null>(null);
+  const [liveSessionReady, setLiveSessionReady] = useState(false);
+
+  // Initialize authenticated Guest Session & Socket.IO when qrToken + backendMode are active
+  useEffect(() => {
+    if (!backendMode || !qrToken) return;
+    let active = true;
+    const unsubs: (() => void)[] = [];
+
+    const hydrateGuestOrders = async () => {
+      try {
+        const ordersDto = await serveqrApi.guest.listOrders();
+        if (active) {
+          setLiveBackendOrders(ordersDto.map(mapBackendOrderToUi));
+        }
+      } catch {
+        // Ignore transient network errors
+      }
+    };
+
+    const bootGuestSession = async () => {
+      try {
+        let accessToken = tokenStore.getGuestToken();
+        if (!accessToken) {
+          const sessionRes = await serveqrApi.guest.createSession({
+            token: qrToken,
+            restaurantSlug,
+            tableCode: tableNumber,
+          });
+          accessToken = sessionRes.accessToken;
+        }
+        const menuDto = await serveqrApi.guest.getMenu();
+        if (!active) return;
+
+        const mapped = mapBackendMenuToUi(menuDto.restaurant.id, menuDto);
+        setLiveBackendMenu({ categories: mapped.categories, menuItems: mapped.menuItems });
+        setLiveSessionReady(true);
+        await hydrateGuestOrders();
+
+        if (accessToken) {
+          serveqrSocket.connectAsGuest(accessToken);
+          unsubs.push(
+            serveqrSocket.onEvent('order:status_updated', () => void hydrateGuestOrders()),
+            serveqrSocket.onEvent('order:estimate_updated', () => void hydrateGuestOrders()),
+            serveqrSocket.onEvent('payment:updated', () => void hydrateGuestOrders()),
+            serveqrSocket.onReconnect(() => void hydrateGuestOrders())
+          );
+        }
+      } catch {
+        if (active) setLiveSessionReady(false);
+      }
+    };
+
+    void bootGuestSession();
+
+    return () => {
+      active = false;
+      unsubs.forEach((u) => u());
+    };
+  }, [backendMode, qrToken, restaurantSlug, tableNumber]);
 
   const restaurant = state.restaurants.find((r) => r.slug === restaurantSlug);
   const tables = restaurant ? scopeTablesByRestaurant(state.tables, restaurant.id) : [];
@@ -116,17 +188,18 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
     }
   }, [availablePaymentMethods, selectedPaymentMethod]);
 
-  const menuItems = useMemo(
-    () => (restaurant ? scopeMenuItemsByRestaurant(state.menuItems, restaurant.id) : []),
-    [restaurant, state.menuItems]
-  );
+  const menuItems = useMemo(() => {
+    if (liveBackendMenu) return liveBackendMenu.menuItems;
+    return restaurant ? scopeMenuItemsByRestaurant(state.menuItems, restaurant.id) : [];
+  }, [liveBackendMenu, restaurant, state.menuItems]);
 
   const categories = useMemo(() => {
+    if (liveBackendMenu) return liveBackendMenu.categories;
     if (!restaurant) return [];
     const configured = state.categoriesByRestaurant[restaurant.id] ?? [];
     const fromItems = Array.from(new Set(menuItems.map((m) => m.category)));
     return Array.from(new Set([...configured, ...fromItems]));
-  }, [menuItems, restaurant, state.categoriesByRestaurant]);
+  }, [liveBackendMenu, menuItems, restaurant, state.categoriesByRestaurant]);
 
   const cart = restaurant && table ? getGuestCart(restaurant.id, table.tableNumber) : [];
 
@@ -139,15 +212,18 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
   );
 
   const mySessionOrders: Order[] = useMemo(() => {
+    if (liveBackendOrders) return liveBackendOrders;
     if (!restaurant || !table) return [];
     return scopeOrdersByRestaurant(state.orders, restaurant.id).filter(
       (o) =>
         o.tableNumber === table.tableNumber && o.customerSessionId === guestSessionId
     );
-  }, [guestSessionId, restaurant, state.orders, table]);
+  }, [guestSessionId, liveBackendOrders, restaurant, state.orders, table]);
 
   const confirmedOrder = confirmedOrderId
-    ? state.orders.find((o) => o.id === confirmedOrderId) ?? null
+    ? mySessionOrders.find((o) => o.id === confirmedOrderId) ??
+      state.orders.find((o) => o.id === confirmedOrderId) ??
+      null
     : null;
 
   const filteredMenuItems = useMemo(() => {
@@ -323,6 +399,42 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
     paymentStatus: 'Paid' | 'Pending',
     onlinePaymentRef?: string
   ) => {
+    if (backendMode && liveSessionReady && tokenStore.getGuestToken()) {
+      void (async () => {
+        try {
+          await serveqrApi.guest.clearCart();
+          for (const ci of cart) {
+            await serveqrApi.guest.addCartItem({
+              menuItemId: ci.menuItemId,
+              quantity: ci.quantity,
+              modifierOptionIds: ci.selectedCustomizations.map((sc) => sc.choiceId),
+              notes: ci.specialInstructions,
+            });
+          }
+          const res = await serveqrApi.guest.placeOrder({
+            customerName,
+            customerPhone,
+            paymentMethod: method === 'Pay at Restaurant' ? 'PAY_AT_RESTAURANT' : 'ONLINE',
+            acceptPriceChanges: true,
+          });
+          const mappedOrder = mapBackendOrderToUi(res.order);
+          setLiveBackendOrders((prev) => [mappedOrder, ...(prev ?? [])]);
+          setGuestCart(restaurant.id, table.tableNumber, []);
+          setCheckoutErrors({});
+          setShowDemoPaymentModal(false);
+          setConfirmedOrderId(mappedOrder.id);
+          setActiveTab('orders');
+        } catch (err) {
+          setCheckoutErrors({
+            customerName:
+              err instanceof Error ? err.message : 'Unable to submit order. Please try again.',
+          });
+          setShowDemoPaymentModal(false);
+        }
+      })();
+      return;
+    }
+
     const placed = placeCustomerOrder({
       restaurantId: restaurant.id,
       branchId: branch?.id ?? table.branchId,
@@ -359,6 +471,57 @@ export const CustomerOrderApp: React.FC<CustomerOrderAppProps> = ({
     setCheckoutErrors({});
 
     if (selectedPaymentMethod === 'Online Payment') {
+      if (backendMode && liveSessionReady && tokenStore.getGuestToken()) {
+        void (async () => {
+          try {
+            await serveqrApi.guest.clearCart();
+            for (const ci of cart) {
+              await serveqrApi.guest.addCartItem({
+                menuItemId: ci.menuItemId,
+                quantity: ci.quantity,
+                modifierOptionIds: ci.selectedCustomizations.map((sc) => sc.choiceId),
+                notes: ci.specialInstructions,
+              });
+            }
+            const placedRes = await serveqrApi.guest.placeOrder({
+              customerName,
+              customerPhone,
+              paymentMethod: 'ONLINE',
+              acceptPriceChanges: true,
+            });
+            const createdOrder = placedRes.order;
+            const rzpOrder = await serveqrApi.guest.createRazorpayOrder(createdOrder.id);
+            const rzpResult = await openRazorpayCheckout({
+              keyId: rzpOrder.keyId,
+              amountPaise: rzpOrder.amountPaise,
+              currency: rzpOrder.currency,
+              restaurantName: restaurant.name,
+              orderNumber: createdOrder.orderNumber,
+              providerOrderId: rzpOrder.providerOrderId,
+              customerName,
+              customerPhone,
+            });
+            await serveqrApi.guest.verifyRazorpayPayment({
+              orderId: createdOrder.id,
+              razorpayOrderId: rzpResult.razorpayOrderId,
+              razorpayPaymentId: rzpResult.razorpayPaymentId,
+              razorpaySignature: rzpResult.razorpaySignature,
+            });
+            const refreshedOrders = await serveqrApi.guest.listOrders();
+            setLiveBackendOrders(refreshedOrders.map(mapBackendOrderToUi));
+            setGuestCart(restaurant.id, table.tableNumber, []);
+            setConfirmedOrderId(createdOrder.id);
+            setActiveTab('orders');
+          } catch (err) {
+            setCheckoutErrors({
+              customerName:
+                err instanceof Error ? err.message : 'Online payment failed or was cancelled.',
+            });
+          }
+        })();
+        return;
+      }
+
       setShowDemoPaymentModal(true);
       return;
     }

@@ -64,3 +64,16 @@ export async function revokeQrHandler(req: Request, res: Response, next: NextFun
     next(error);
   }
 }
+
+export async function deleteTableHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await tableService.deleteTable(
+      req.tenantContext!.restaurantId,
+      req.params.tableId,
+      req.user!.id
+    );
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}

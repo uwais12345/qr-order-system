@@ -58,7 +58,7 @@ function formatElapsedMinutes(createdAtIso: string, nowMs: number): string {
 }
 
 export const KitchenDisplayView: React.FC<KitchenDisplayViewProps> = ({ restaurant }) => {
-  const { state, updateOrderStatus } = useServeQR();
+  const { state, updateOrderStatus, updateOrderPrepEstimate } = useServeQR();
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [mobileTab, setMobileTab] = useState<OrderStatus>('Pending');
 
@@ -193,18 +193,58 @@ export const KitchenDisplayView: React.FC<KitchenDisplayViewProps> = ({ restaura
                   ))}
                 </ul>
 
-                <div className="pt-2 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => updateOrderStatus(order.id, activeMobileCol.nextStatus)}
-                    className={`w-full min-h-[46px] py-2.5 px-4 text-xs font-bold rounded-xl text-white cursor-pointer transition-colors shadow-xs ${
-                      activeMobileCol.status === 'Ready'
-                        ? 'bg-[#087F5B] hover:bg-[#06674A]'
-                        : 'bg-[#172B4D] hover:bg-[#10203A]'
-                    }`}
-                  >
-                    {activeMobileCol.actionLabel}
-                  </button>
+                <div className="pt-2 border-t border-slate-100 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-600">
+                    <span className="font-mono">Est. Prep: ~{order.estimatedPrepMinutes}m</span>
+                    <div className="inline-flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateOrderPrepEstimate(order.id, Math.max(5, order.estimatedPrepMinutes - 5))
+                        }
+                        aria-label={`Decrease prep time for ${order.id}`}
+                        className="px-2 py-1 text-[11px] font-mono font-semibold bg-slate-100 hover:bg-slate-200 rounded cursor-pointer"
+                      >
+                        -5m
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateOrderPrepEstimate(order.id, Math.min(180, order.estimatedPrepMinutes + 5))
+                        }
+                        aria-label={`Increase prep time for ${order.id}`}
+                        className="px-2 py-1 text-[11px] font-mono font-semibold bg-slate-100 hover:bg-slate-200 rounded cursor-pointer"
+                      >
+                        +5m
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {activeMobileCol.status === 'Pending' && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateOrderStatus(order.id, 'Cancelled', 'Rejected by kitchen staff', {
+                            rejectPending: true,
+                          })
+                        }
+                        className="min-h-[46px] px-3.5 py-2.5 text-xs font-bold rounded-xl text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 cursor-pointer transition-colors"
+                      >
+                        Reject
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => updateOrderStatus(order.id, activeMobileCol.nextStatus)}
+                      className={`flex-1 min-h-[46px] py-2.5 px-4 text-xs font-bold rounded-xl text-white cursor-pointer transition-colors shadow-xs ${
+                        activeMobileCol.status === 'Ready'
+                          ? 'bg-[#087F5B] hover:bg-[#06674A]'
+                          : 'bg-[#172B4D] hover:bg-[#10203A]'
+                      }`}
+                    >
+                      {activeMobileCol.actionLabel}
+                    </button>
+                  </div>
                 </div>
               </article>
             ))
@@ -291,24 +331,75 @@ export const KitchenDisplayView: React.FC<KitchenDisplayViewProps> = ({ restaura
                         ))}
                       </ul>
 
-                      <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
-                        <span className="font-mono text-[11px] text-slate-400 tabular-nums">
-                          {new Date(order.createdAt).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => updateOrderStatus(order.id, col.nextStatus)}
-                          className={`px-3 py-1.5 text-xs font-semibold rounded-lg text-white cursor-pointer transition-colors ${
-                            col.status === 'Ready'
-                              ? 'bg-[#087F5B] hover:bg-[#06674A]'
-                              : 'bg-[#172B4D] hover:bg-[#10203A]'
-                          }`}
-                        >
-                          {col.actionLabel}
-                        </button>
+                      <div className="pt-2.5 border-t border-slate-100 space-y-2">
+                        <div className="flex items-center justify-between text-[11px] text-slate-500">
+                          <span className="font-mono">Est. ~{order.estimatedPrepMinutes}m</span>
+                          <div className="inline-flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateOrderPrepEstimate(
+                                  order.id,
+                                  Math.max(5, order.estimatedPrepMinutes - 5)
+                                )
+                              }
+                              aria-label={`Decrease prep time for ${order.id}`}
+                              className="px-1.5 py-0.5 text-[10px] font-mono font-semibold bg-slate-100 hover:bg-slate-200 rounded cursor-pointer"
+                            >
+                              -5m
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateOrderPrepEstimate(
+                                  order.id,
+                                  Math.min(180, order.estimatedPrepMinutes + 5)
+                                )
+                              }
+                              aria-label={`Increase prep time for ${order.id}`}
+                              className="px-1.5 py-0.5 text-[10px] font-mono font-semibold bg-slate-100 hover:bg-slate-200 rounded cursor-pointer"
+                            >
+                              +5m
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-mono text-[11px] text-slate-400 tabular-nums">
+                            {new Date(order.createdAt).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            {col.status === 'Pending' && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateOrderStatus(
+                                    order.id,
+                                    'Cancelled',
+                                    'Rejected by kitchen staff',
+                                    { rejectPending: true }
+                                  )
+                                }
+                                className="px-2.5 py-1.5 text-xs font-semibold rounded-lg text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 cursor-pointer transition-colors"
+                              >
+                                Reject
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => updateOrderStatus(order.id, col.nextStatus)}
+                              className={`px-3 py-1.5 text-xs font-semibold rounded-lg text-white cursor-pointer transition-colors ${
+                                col.status === 'Ready'
+                                  ? 'bg-[#087F5B] hover:bg-[#06674A]'
+                                  : 'bg-[#172B4D] hover:bg-[#10203A]'
+                              }`}
+                            >
+                              {col.actionLabel}
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </article>
                   ))}

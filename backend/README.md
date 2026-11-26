@@ -38,6 +38,32 @@ Modular monolith backend for **ServeQR (QR-based Restaurant Ordering & Managemen
 - **Online Checkout & Raw Webhooks**: `/api/v1/guest/payments` (`create-order`, signature-verified `verify`), and `/api/v1/webhooks/razorpay` mounted with `express.raw` before `express.json` for raw-body signature verification, event deduplication (`PaymentWebhookEvent`), amount checks, and `payment:updated` broadcasts ([src/modules/payment/](./src/modules/payment/)).
 - **Cashier Settlement & Verified Revenue** (`/api/v1/restaurants/:restaurantId/payments`): Owner-only offline counter settlement (`settle-offline`) and verified revenue reporting counting strictly `SUCCEEDED` payments (`summary`).
 
+### Phase 7: Production Hardening, Docker, CI/CD & Frontend Integration Readiness
+- **Observability & OpenAPI**: Correlation ID access logging ([src/middlewares/requestLogger.ts](./src/middlewares/requestLogger.ts)), `/health`, `/api/v1/health`, `/api/v1/ready` readiness probes, `/api/v1/openapi.json` OpenAPI 3.0.3 contract ([src/docs/openapi.ts](./src/docs/openapi.ts)), and graceful `SIGTERM`/`SIGINT` shutdown ([src/server.ts](./src/server.ts)).
+- **SQL Migration & CHECK Constraints**: Baseline PostgreSQL migration with production `CHECK` constraints ([prisma/migrations/20261127000000_init/migration.sql](./prisma/migrations/20261127000000_init/migration.sql)).
+- **Containerization & CI/CD**: Multi-stage [Dockerfile](./Dockerfile), root [docker-compose.yml](../docker-compose.yml) (PostgreSQL 16 + Backend + Nginx SPA Frontend), and GitHub Actions [ci.yml](../.github/workflows/ci.yml).
+- **Frontend API Client & Dev Proxy**: Typed API client ([../src/services/apiClient.ts](../src/services/apiClient.ts)) with token refresh and guest-token handling, plus Vite proxy in [../vite.config.ts](../vite.config.ts).
+
+## Production Docker Stack
+
+```bash
+# From repository root (qr-order-system/)
+docker compose up --build -d
+
+# Seed initial demo/platform accounts inside backend container
+docker compose exec backend npx prisma db seed
+```
+
+## Database Backup & Restore Runbook
+
+```bash
+# Create compressed logical backup
+docker compose exec -T postgres pg_dump -U postgres -Fc serveqr > serveqr_backup_$(date +%F).dump
+
+# Restore from backup
+cat serveqr_backup_YYYY-MM-DD.dump | docker compose exec -T postgres pg_restore -U postgres -d serveqr --clean --if-exists
+```
+
 ## Local Setup
 
 ```bash

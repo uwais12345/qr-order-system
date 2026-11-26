@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  AlertTriangle,
   BarChart3,
   Building2,
   CreditCard,
@@ -7,6 +8,7 @@ import {
   LogOut,
   Menu,
   Plus,
+  RefreshCw,
   Settings,
   X,
 } from 'lucide-react';
@@ -23,6 +25,11 @@ interface SuperAdminLayoutProps {
   activeSection: SuperAdminSection;
   breadcrumbTitle: string;
   adminEmail: string;
+  backendMode?: boolean;
+  backendSyncing?: boolean;
+  backendError?: string | null;
+  onRefresh?: () => void;
+  onDismissError?: () => void;
   onSelectSection: (section: SuperAdminSection) => void;
   onOpenAddRestaurant: () => void;
   onLogout: () => void;
@@ -42,6 +49,11 @@ export const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({
   activeSection,
   breadcrumbTitle,
   adminEmail,
+  backendMode = false,
+  backendSyncing = false,
+  backendError = null,
+  onRefresh,
+  onDismissError,
   onSelectSection,
   onOpenAddRestaurant,
   onLogout,
@@ -159,15 +171,62 @@ export const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onOpenAddRestaurant}
-            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 min-h-[40px] text-xs sm:text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-          >
-            <Plus className="w-4 h-4 shrink-0" />
-            <span>Add Restaurant</span>
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {backendMode && onRefresh && (
+              <button
+                type="button"
+                onClick={onRefresh}
+                disabled={backendSyncing}
+                aria-label="Sync platform data with server"
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-2 min-h-[40px] text-xs font-semibold text-[#172B4D] bg-slate-100 hover:bg-slate-200 disabled:opacity-60 rounded-lg transition-colors whitespace-nowrap cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-[#087F5B] ${backendSyncing ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">{backendSyncing ? 'Syncing...' : 'Sync'}</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onOpenAddRestaurant}
+              className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 min-h-[40px] text-xs sm:text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              <Plus className="w-4 h-4 shrink-0" />
+              <span>Add Restaurant</span>
+            </button>
+          </div>
         </header>
+
+        {backendMode && backendError && (
+          <div
+            role="alert"
+            className="bg-red-50 border-b border-red-200 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 text-xs text-red-900"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+              <span className="truncate font-medium">Server sync error: {backendError}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {onRefresh && (
+                <button
+                  type="button"
+                  onClick={onRefresh}
+                  className="font-bold text-red-700 hover:text-red-900 underline cursor-pointer"
+                >
+                  Retry
+                </button>
+              )}
+              {onDismissError && (
+                <button
+                  type="button"
+                  onClick={onDismissError}
+                  aria-label="Dismiss server error"
+                  className="p-1 text-red-600 hover:text-red-900 cursor-pointer rounded"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">{children}</main>
       </div>

@@ -79,7 +79,16 @@ async function main() {
 
   console.log(`✓ Super Admin created (${superAdmin.email}).`);
 
+  const now = new Date();
+  const oneYearFromNow = new Date();
+  oneYearFromNow.setFullYear(now.getFullYear() + 1);
+
   // 4. ABC Restaurant (Tenant + Restaurant + Memberships)
+  const existingAbc = await prisma.restaurant.findUnique({
+    where: { slug: 'abc-restaurant' },
+  });
+
+  if (!existingAbc) {
   const abcTenant = await prisma.tenant.create({
     data: {
       name: 'ABC Hospitality Group',
@@ -97,10 +106,6 @@ async function main() {
   });
 
   // ABC Restaurant Subscription (Professional)
-  const now = new Date();
-  const oneYearFromNow = new Date();
-  oneYearFromNow.setFullYear(now.getFullYear() + 1);
-
   await prisma.restaurantSubscription.create({
     data: {
       restaurantId: abcRestaurant.id,
@@ -318,8 +323,16 @@ async function main() {
   });
 
   console.log('✓ ABC Restaurant seeded with branches, tables, QR tokens, tax rules, and menu catalog.');
+  } else {
+    console.log('✓ ABC Restaurant already exists, skipping duplicate creation.');
+  }
 
   // 5. Spice Courtyard & Malabar Table (Basic accounts for multi-tenant isolation testing)
+  const existingSpice = await prisma.restaurant.findUnique({
+    where: { slug: 'spice-courtyard' },
+  });
+
+  if (!existingSpice) {
   const spiceTenant = await prisma.tenant.create({ data: { name: 'Spice Courtyard Pvt Ltd' } });
   const spiceRestaurant = await prisma.restaurant.create({
     data: {
@@ -360,6 +373,9 @@ async function main() {
   });
 
   console.log('✓ Spice Courtyard demo restaurant seeded.');
+  } else {
+    console.log('✓ Spice Courtyard already exists, skipping duplicate creation.');
+  }
   console.log('🚀 Seeding complete! Database is primed and ready.');
 }
 

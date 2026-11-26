@@ -30,7 +30,7 @@ export const QrManagementView: React.FC<QrManagementViewProps> = ({
   onTestQrRoute,
   onGoToTables,
 }) => {
-  const { state, regenerateTableQr } = useServeQR();
+  const { state, qrPathsByTableId, regenerateTableQr } = useServeQR();
   const tables = scopeTablesByRestaurant(state.tables, restaurant.id);
   const mainBranch = restaurant.branches[0];
   const origin =
@@ -40,11 +40,14 @@ export const QrManagementView: React.FC<QrManagementViewProps> = ({
   const [previewTable, setPreviewTable] = useState<DiningTable | null>(null);
   const [regenNoticeId, setRegenNoticeId] = useState<string | null>(null);
 
-  const getUrlForTable = (table: DiningTable) =>
-    buildTableQrUrl(origin, restaurant.slug, table.tableNumber, table.branchId, table.qrVersion);
-
   const getPathForTable = (table: DiningTable) =>
+    qrPathsByTableId[table.id] ||
     buildTableQrPath(restaurant.slug, table.tableNumber, table.branchId, table.qrVersion);
+
+  const getUrlForTable = (table: DiningTable) =>
+    qrPathsByTableId[table.id]
+      ? `${origin.replace(/\/+$/, '')}${qrPathsByTableId[table.id]}`
+      : buildTableQrUrl(origin, restaurant.slug, table.tableNumber, table.branchId, table.qrVersion);
 
   const handleCopy = (table: DiningTable) => {
     const url = getUrlForTable(table);

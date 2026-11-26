@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { RestaurantStatus, SubscriptionStatus } from '@prisma/client';
+import { safeMediaUrlSchema } from '../../utils/validation.js';
 
 export const createRestaurantSchema = z.object({
   name: z.string().min(2, 'Restaurant name must be at least 2 characters').max(120),
@@ -10,7 +11,7 @@ export const createRestaurantSchema = z.object({
     .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens')
     .optional(),
   tenantName: z.string().min(2).max(120).optional(),
-  logoUrl: z.string().url('Invalid logo URL').optional().nullable(),
+  logoUrl: safeMediaUrlSchema('logo URL').optional().nullable(),
   payAtRestaurantEnabled: z.boolean().optional().default(false),
   ownerName: z.string().min(2, 'Owner name is required').max(100),
   ownerEmail: z.string().email('Valid owner email is required'),
@@ -27,7 +28,7 @@ export const createRestaurantSchema = z.object({
 
 export const updateRestaurantSchema = z.object({
   name: z.string().min(2).max(120).optional(),
-  logoUrl: z.string().url().optional().nullable(),
+  logoUrl: safeMediaUrlSchema('logo URL').optional().nullable(),
   status: z.nativeEnum(RestaurantStatus).optional(),
   payAtRestaurantEnabled: z.boolean().optional(),
 });

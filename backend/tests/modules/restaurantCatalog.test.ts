@@ -17,6 +17,7 @@ vi.mock('../../src/config/prisma.js', () => ({
       findFirst: vi.fn(),
       count: vi.fn(),
       create: vi.fn(),
+      delete: vi.fn(),
     },
     qRToken: { updateMany: vi.fn(), create: vi.fn() },
     menuCategory: {
@@ -280,5 +281,77 @@ describe('Restaurant Catalog, Tables & QR API', () => {
 
     expect(okRes.status).toBe(200);
     expect(okRes.body.data.availabilityStatus).toBe(ItemAvailability.SOLD_OUT);
+  });
+
+  it('prevents deleting a table with order history (409) and deletes unused tables with audit log', async () => {
+    mockUser(RestaurantRole.OWNER);
+    (prisma.restaurant.findFirst as any).mockResolvedValue(restaurantARecord);
+    (prisma.diningTable.findFirst as any).mockResolvedValueOnce({
+      id: tableAId,
+      tableCode: 'T03',
+      branchId: branchAId,
+      _count: { orders: 2, guestSessions: 1 },
+    });
+
+    const conflictRes = await request(app)
+      .delete(`/api/v1/restaurants/${rstAId}/tables/${tableAId}`)
+      .set('Authorization', `Bearer ${ownerAToken}`);
+
+    expect(conflictRes.status).toBe(409);
+
+    mockUser(RestaurantRole.OWNER);
+    (prisma.restaurant.findFirst as any).mockResolvedValue(restaurantARecord);
+    (prisma.diningTable.findFirst as any).mockResolvedValueOnce({
+      id: tableAId,
+      tableCode: 'T03',
+      branchId: branchAId,
+      _count: { orders: 0, guestSessions: 0 },
+    });
+
+    const txMock = {
+      diningTable: { delete: vi.fn().mockResolvedValue({ id: tableAId }) },
+      auditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-del-tbl' }) },
+    };
+    (prisma.$transaction as any).mockImplementation(async (cb: any) => cb(txMock));
+
+    const okRes = await request(app)
+      .delete(`/api/v1/restaurants/${rstAId}/tables/${tableAId}`)
+      .set('Authorization', `Bearer ${ownerAToken}`);
+
+    expect(okRes.status).toBe(200);
+    expect(okRes.body.data.deletedTableId).toBe(tableAId);
+    expect(txMock.diningTable.delete).toHaveBeenCalledWith({ where: { id: tableAId } });
+  });
+
+  it('accepts uploaded data:image logo URIs on restaurant profile updates and rejects unsafe schemes', async () => {
+    mockUser(RestaurantRole.OWNER);
+    (prisma.restaurant.findFirst as any).mockResolvedValue(restaurantARecord);
+
+    const badRes = await request(app)
+      .patch(`/api/v1/restaurants/${rstAId}`)
+      .set('Authorization', `Bearer ${ownerAToken}`)
+      .send({ logoUrl: 'javascript:alert(1)' });
+
+    expect(badRes.status).toBe(400);
+
+    mockUser(RestaurantRole.OWNER);
+    (prisma.restaurant.findFirst as any).mockResolvedValue(restaurantARecord);
+    (prisma.restaurant.findUnique as any).mockResolvedValue(restaurantARecord);
+    const dataUri = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+    const txMock = {
+      restaurant: {
+        update: vi.fn().mockResolvedValue({ ...restaurantARecord, logoUrl: dataUri }),
+      },
+      auditLog: { create: vi.fn().mockResolvedValue({ id: 'audit-logo' }) },
+    };
+    (prisma.$transaction as any).mockImplementation(async (cb: any) => cb(txMock));
+
+    const okRes = await request(app)
+      .patch(`/api/v1/restaurants/${rstAId}`)
+      .set('Authorization', `Bearer ${ownerAToken}`)
+      .send({ logoUrl: dataUri });
+
+    expect(okRes.status).toBe(200);
+    expect(okRes.body.data.logoUrl).toBe(dataUri);
   });
 });

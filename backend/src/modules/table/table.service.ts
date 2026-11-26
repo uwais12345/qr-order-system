@@ -264,6 +264,48 @@ export class TableService {
       return { tableId: table.id, revokedCount: result.count };
     });
   }
+
+  async deleteTable(restaurantId: string, tableId: string, actorUserId: string) {
+    const existing = await prisma.diningTable.findFirst({
+      where: {
+        id: tableId,
+        branch: { restaurantId },
+      },
+      include: {
+        _count: {
+          select: {
+            orders: true,
+            guestSessions: true,
+          },
+        },
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundError('Dining table not found for this restaurant');
+    }
+
+    if (existing._count.orders > 0 || existing._count.guestSessions > 0) {
+      throw new ConflictError(
+        'Cannot delete a dining table with existing guest sessions or order history. Set table status to INACTIVE instead.'
+      );
+    }
+
+    return prisma.$transaction(async (tx) => {
+      await tx.diningTable.delete({ where: { id: tableId } });
+
+      await recordAuditLog(tx, {
+        actorUserId,
+        restaurantId,
+        action: 'TABLE_DELETED',
+        entityType: 'DiningTable',
+        entityId: tableId,
+        metadata: { tableCode: existing.tableCode, branchId: existing.branchId },
+      });
+
+      return { deletedTableId: tableId, tableCode: existing.tableCode };
+    });
+  }
 }
 
 export const tableService = new TableService();

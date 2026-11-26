@@ -15,7 +15,13 @@ export const AuthLoginView: React.FC<AuthLoginViewProps> = ({
   onSuccess,
   onBack,
 }) => {
-  const { state, loginSuperAdmin, loginRestaurantOwner } = useServeQR();
+  const {
+    state,
+    backendMode,
+    authenticateWithBackend,
+    loginSuperAdmin,
+    loginRestaurantOwner,
+  } = useServeQR();
   const isSuperAdmin = role === 'super-admin';
 
   const [email, setEmail] = useState(
@@ -24,16 +30,30 @@ export const AuthLoginView: React.FC<AuthLoginViewProps> = ({
   const [password, setPassword] = useState('serveqr2026');
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({});
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const validation = validateLoginForm(email, password);
     if (Object.keys(validation).length > 0) {
       setErrors(validation);
+      return;
+    }
+
+    if (backendMode) {
+      setSubmitting(true);
+      const res = await authenticateWithBackend(email, password, role);
+      setSubmitting(false);
+      if (!res.ok) {
+        setErrors({ form: res.error });
+        return;
+      }
+      setErrors({});
+      onSuccess();
       return;
     }
 
@@ -186,9 +206,14 @@ export const AuthLoginView: React.FC<AuthLoginViewProps> = ({
 
             <button
               type="submit"
-              className="w-full py-2.5 px-4 min-h-[44px] text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] rounded-lg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#087F5B] focus-visible:ring-offset-2"
+              disabled={submitting}
+              className="w-full py-2.5 px-4 min-h-[44px] text-sm font-semibold text-white bg-[#087F5B] hover:bg-[#06674A] disabled:opacity-60 rounded-lg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#087F5B] focus-visible:ring-offset-2"
             >
-              {isSuperAdmin ? 'Login to Super Admin' : 'Login to Restaurant Dashboard'}
+              {submitting
+                ? 'Authenticating...'
+                : isSuperAdmin
+                ? 'Login to Super Admin'
+                : 'Login to Restaurant Dashboard'}
             </button>
           </form>
 
@@ -222,6 +247,24 @@ export const AuthLoginView: React.FC<AuthLoginViewProps> = ({
                     </span>
                   </button>
                 ))}
+                {backendMode && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('kitchen@abcrestaurant.in');
+                      setPassword('serveqr2026');
+                      setErrors({});
+                    }}
+                    className="w-full text-left px-3 py-2 min-h-[44px] rounded-lg border border-dashed border-emerald-300 bg-emerald-50/40 hover:border-[#087F5B] hover:bg-emerald-50 transition-colors flex items-center justify-between gap-2 cursor-pointer"
+                  >
+                    <span className="text-xs font-semibold text-[#087F5B] truncate">
+                      ABC Restaurant (Kitchen Staff — KDS Role)
+                    </span>
+                    <span className="text-xs font-mono text-slate-600 truncate">
+                      kitchen@abcrestaurant.in
+                    </span>
+                  </button>
+                )}
               </div>
             </div>
           )}

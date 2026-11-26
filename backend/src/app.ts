@@ -1,10 +1,12 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { env } from './config/env.js';
 import { prisma } from './config/prisma.js';
 import { errorHandler } from './middlewares/errorHandler.js';
+import { requestLogger } from './middlewares/requestLogger.js';
+import { openApiSpec } from './docs/openapi.js';
 import { NotFoundError } from './utils/errors.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import superAdminRoutes from './modules/super-admin/superAdmin.routes.js';
@@ -36,10 +38,11 @@ export function createApp() {
   // 2. Payment Webhooks (must receive exact raw Buffer body BEFORE express.json)
   app.use(`${env.API_PREFIX}/webhooks`, webhookPaymentRouter);
 
-  // 3. Body Parser
-  app.use(express.json());
+  // 3. Body Parser & Request Correlation Logger
+  app.use(express.json({ limit: '1mb' }));
+  app.use(requestLogger);
 
-  // 3. Rate limiting for sensitive authentication endpoints
+  // 4. Rate limiting for sensitive authentication endpoints
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // limit each IP to 100 login requests per windowMs
@@ -54,13 +57,14 @@ export function createApp() {
     },
   });
 
-  // 4. Base Probes & Health Check
-  app.get('/health', async (_req, res) => {
+  // 5. Base Probes, Health Check & OpenAPI Contract
+  const healthProbeHandler = async (_req: Request, res: Response) => {
     try {
       await prisma.$queryRaw`SELECT 1`;
       res.json({
         status: 'UP',
         database: 'CONNECTED',
+        environment: env.NODE_ENV,
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
       });
@@ -71,9 +75,16 @@ export function createApp() {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
+  };
+
+  app.get('/health', healthProbeHandler);
+  app.get(`${env.API_PREFIX}/health`, healthProbeHandler);
+  app.get(`${env.API_PREFIX}/ready`, healthProbeHandler);
+  app.get(`${env.API_PREFIX}/openapi.json`, (_req, res) => {
+    res.json(openApiSpec);
   });
 
-  // 5. Mount API Routes
+  // 6. Mount API Routes
   app.use(`${env.API_PREFIX}/auth`, authLimiter, authRoutes);
   app.use(`${env.API_PREFIX}/super-admin`, superAdminRoutes);
   app.use(`${env.API_PREFIX}/restaurants/:restaurantId/tables`, tableRoutes);
