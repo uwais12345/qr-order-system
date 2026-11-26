@@ -12,6 +12,7 @@ import {
 } from './table.schema.js';
 import {
   createTableHandler,
+  deleteTableHandler,
   listTablesHandler,
   revokeQrHandler,
   rotateQrHandler,
@@ -42,6 +43,13 @@ router.patch(
   requireTenant({ allowedRoles: [RestaurantRole.OWNER] }),
   validateRequest({ params: tableParams, body: updateTableSchema }),
   updateTableHandler
+);
+
+router.delete(
+  '/:tableId',
+  requireTenant({ allowedRoles: [RestaurantRole.OWNER] }),
+  validateRequest({ params: tableParams }),
+  deleteTableHandler
 );
 
 router.post(

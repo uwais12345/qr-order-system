@@ -1,9 +1,10 @@
 import { z } from 'zod';
 import { RestaurantRole } from '@prisma/client';
+import { safeMediaUrlSchema } from '../../utils/validation.js';
 
 export const updateRestaurantProfileSchema = z.object({
   name: z.string().min(2).max(120).optional(),
-  logoUrl: z.string().url('Invalid logo URL').optional().nullable(),
+  logoUrl: safeMediaUrlSchema('logo URL').optional().nullable(),
   payAtRestaurantEnabled: z.boolean().optional(),
 });
 

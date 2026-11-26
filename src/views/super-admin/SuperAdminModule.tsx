@@ -17,7 +17,15 @@ interface SuperAdminModuleProps {
 }
 
 export const SuperAdminModule: React.FC<SuperAdminModuleProps> = ({ onNavigate }) => {
-  const { auth, logoutSuperAdmin } = useServeQR();
+  const {
+    auth,
+    backendMode,
+    backendSyncing,
+    backendError,
+    refreshFromBackend,
+    clearBackendError,
+    logoutSuperAdmin,
+  } = useServeQR();
   const [section, setSection] = useState<SuperAdminSection>('dashboard');
   const [inspectingRestaurantId, setInspectingRestaurantId] = useState<string | null>(null);
   const [showAddWizard, setShowAddWizard] = useState(false);
@@ -50,6 +58,11 @@ export const SuperAdminModule: React.FC<SuperAdminModuleProps> = ({ onNavigate }
         activeSection={section}
         breadcrumbTitle={breadcrumbTitle}
         adminEmail={auth.superAdminEmail}
+        backendMode={backendMode}
+        backendSyncing={backendSyncing}
+        backendError={backendError}
+        onRefresh={() => void refreshFromBackend()}
+        onDismissError={clearBackendError}
         onSelectSection={(next) => {
           setInspectingRestaurantId(null);
           setSection(next);

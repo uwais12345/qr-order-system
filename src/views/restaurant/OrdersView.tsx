@@ -194,10 +194,19 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ restaurant }) => {
                           {(order.status === 'Pending' || order.status === 'Accepted') && (
                             <button
                               type="button"
-                              onClick={() => updateOrderStatus(order.id, 'Cancelled')}
+                              onClick={() =>
+                                updateOrderStatus(
+                                  order.id,
+                                  'Cancelled',
+                                  order.status === 'Pending'
+                                    ? 'Declined from order console'
+                                    : 'Cancelled by restaurant staff',
+                                  { rejectPending: order.status === 'Pending' }
+                                )
+                              }
                               className="px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-md cursor-pointer transition-colors"
                             >
-                              Cancel
+                              {order.status === 'Pending' ? 'Reject' : 'Cancel'}
                             </button>
                           )}
                         </div>
@@ -316,10 +325,19 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ restaurant }) => {
                   {(order.status === 'Pending' || order.status === 'Accepted') && (
                     <button
                       type="button"
-                      onClick={() => updateOrderStatus(order.id, 'Cancelled')}
+                      onClick={() =>
+                        updateOrderStatus(
+                          order.id,
+                          'Cancelled',
+                          order.status === 'Pending'
+                            ? 'Declined from order console'
+                            : 'Cancelled by restaurant staff',
+                          { rejectPending: order.status === 'Pending' }
+                        )
+                      }
                       className="min-h-[44px] px-3.5 py-2 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-xl cursor-pointer transition-colors"
                     >
-                      Cancel Order
+                      {order.status === 'Pending' ? 'Reject Order' : 'Cancel Order'}
                     </button>
                   )}
                 </div>

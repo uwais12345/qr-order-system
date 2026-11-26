@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ItemAvailability, TaxCalculationType } from '@prisma/client';
+import { safeMediaUrlSchema } from '../../utils/validation.js';
 
 export const createCategorySchema = z.object({
   name: z.string().min(1, 'Category name is required').max(80),
@@ -33,7 +34,7 @@ export const createMenuItemSchema = z.object({
   categoryId: z.string().uuid('Valid categoryId is required'),
   name: z.string().min(1, 'Item name is required').max(120),
   description: z.string().max(600).optional().nullable(),
-  imageUrl: z.string().max(500).optional().nullable(),
+  imageUrl: safeMediaUrlSchema('image URL').or(z.literal('')).optional().nullable(),
   price: z.number().nonnegative('Price cannot be negative'),
   isVeg: z.boolean().default(false),
   availabilityStatus: z.nativeEnum(ItemAvailability).default(ItemAvailability.AVAILABLE),
@@ -44,7 +45,7 @@ export const updateMenuItemSchema = z.object({
   categoryId: z.string().uuid().optional(),
   name: z.string().min(1).max(120).optional(),
   description: z.string().max(600).optional().nullable(),
-  imageUrl: z.string().max(500).optional().nullable(),
+  imageUrl: safeMediaUrlSchema('image URL').or(z.literal('')).optional().nullable(),
   price: z.number().nonnegative('Price cannot be negative').optional(),
   isVeg: z.boolean().optional(),
   availabilityStatus: z.nativeEnum(ItemAvailability).optional(),

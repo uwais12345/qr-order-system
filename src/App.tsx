@@ -61,6 +61,7 @@ const ServeQRRouter: React.FC = () => {
           restaurantSlug={qrRoute.restaurantSlug}
           tableNumber={qrRoute.tableNumber}
           branchId={qrRoute.branchId}
+          qrToken={params.get('token') ?? undefined}
           autoStart={params.get('autostart') === '1'}
         />
       </Suspense>
